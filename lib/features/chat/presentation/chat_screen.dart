@@ -223,7 +223,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Amorae',
+                  _getPersonaDisplayName(thread),
                   style: AppTextStyles.titleMedium,
                 ),
                 Row(
@@ -391,6 +391,50 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  String _getPersonaDisplayName(ThreadModel? thread) {
+    if (thread == null || thread.persona == null) {
+      return 'Amorae';
+    }
+    
+    final personaName = thread.persona!;
+    
+    // Check if it's a default persona
+    final persona = PersonaModel.getByName(personaName);
+    if (persona != null) {
+      return persona.displayName;
+    }
+    
+    // For custom personas, get from user preferences
+    final userAsync = ref.watch(currentUserProvider);
+    return userAsync.when(
+      data: (user) {
+        if (user == null) return personaName;
+        
+        // If it's a relationship persona and user has a custom name
+        if (['girlfriend', 'boyfriend', 'friend'].contains(personaName)) {
+          return user.prefs.customPersonaName ?? _getDefaultCustomName(personaName);
+        }
+        
+        return personaName;
+      },
+      loading: () => personaName,
+      error: (_, __) => personaName,
+    );
+  }
+  
+  String _getDefaultCustomName(String personaType) {
+    switch (personaType) {
+      case 'girlfriend':
+        return 'Luna';
+      case 'boyfriend':
+        return 'Jack';
+      case 'friend':
+        return 'Alex';
+      default:
+        return personaType;
+    }
+  }
+
   void _confirmDeleteChat() {
     showDialog(
       context: context,
@@ -423,7 +467,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 final firestoreService = ref.read(firestoreServiceProvider);
                 await firestoreService.deleteThread(widget.threadId);
                 if (mounted) {
-                  context.pop();
+                  context.go('/home');
                 }
               },
               child: Text(

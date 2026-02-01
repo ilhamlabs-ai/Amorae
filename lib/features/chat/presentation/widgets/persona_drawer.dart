@@ -79,22 +79,38 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
-        // Default Personas Section
+        // Relationships Section
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Text(
-            'AI COMPANIONS',
+            'RELATIONSHIPS',
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.textTertiary,
               letterSpacing: 1.2,
             ),
           ),
         ),
-        ...defaultPersonas.map((persona) => _buildPersonaTile(
-          persona: persona,
-          isSelected: selectedPersona == persona.name,
+        _buildCustomPersonaTile(
+          type: PersonaType.girlfriend,
+          icon: Icons.favorite,
+          title: 'Girlfriend',
+          defaultName: 'Luna',
           user: user,
-        )),
+        ),
+        _buildCustomPersonaTile(
+          type: PersonaType.boyfriend,
+          icon: Icons.favorite_border,
+          title: 'Boyfriend',
+          defaultName: 'Jack',
+          user: user,
+        ),
+        _buildCustomPersonaTile(
+          type: PersonaType.friend,
+          icon: Icons.people,
+          title: 'Close Friend',
+          defaultName: 'Alex',
+          user: user,
+        ),
 
         // Divider
         Padding(
@@ -102,14 +118,14 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
           child: Divider(color: AppColors.glassBorder, height: 1),
         ),
 
-        // Custom Personas Section
+        // AI Companions Section (expandable)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'RELATIONSHIPS',
+                'AI COMPANIONS',
                 style: AppTextStyles.labelSmall.copyWith(
                   color: AppColors.textTertiary,
                   letterSpacing: 1.2,
@@ -131,27 +147,11 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
           ),
         ),
         if (_showCustomPersonas) ...[
-          _buildCustomPersonaTile(
-            type: PersonaType.girlfriend,
-            icon: Icons.favorite,
-            title: 'Girlfriend',
-            defaultName: 'Luna',
+          ...defaultPersonas.map((persona) => _buildPersonaTile(
+            persona: persona,
+            isSelected: selectedPersona == persona.name,
             user: user,
-          ),
-          _buildCustomPersonaTile(
-            type: PersonaType.boyfriend,
-            icon: Icons.favorite_border,
-            title: 'Boyfriend',
-            defaultName: 'Jack',
-            user: user,
-          ),
-          _buildCustomPersonaTile(
-            type: PersonaType.friend,
-            icon: Icons.people,
-            title: 'Close Friend',
-            defaultName: 'Alex',
-            user: user,
-          ),
+          )),
         ],
       ],
     );

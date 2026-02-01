@@ -52,18 +52,20 @@ class ThreadListScreen extends ConsumerWidget {
       child: Row(
         children: [
           // Menu button for persona drawer
-          GestureDetector(
-            onTap: () => Scaffold.of(context).openDrawer(),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.glassBorder),
-              ),
-              child: const Icon(
-                Icons.menu,
-                color: AppColors.textSecondary,
+          Builder(
+            builder: (context) => GestureDetector(
+              onTap: () => Scaffold.of(context).openDrawer(),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.glassBorder),
+                ),
+                child: const Icon(
+                  Icons.menu,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ),

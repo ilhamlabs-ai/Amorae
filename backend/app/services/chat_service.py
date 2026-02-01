@@ -58,6 +58,11 @@ class ChatService:
         preferences = UserPreferences(**(user_data.get("prefs", {})))
         user_name = user_data.get("displayName", "Friend")
         
+        # Override persona with thread's persona if it exists
+        # This ensures each thread maintains its own persona
+        if thread_data.get("persona"):
+            preferences.selected_persona = thread_data["persona"]
+        
         # Get user facts
         facts_ref = self.db.collection("users").document(user.uid).collection("facts")
         facts_docs = facts_ref.where("status", "==", "active").stream()
@@ -195,6 +200,11 @@ class ChatService:
             
             preferences = UserPreferences(**(user_data.get("prefs", {})))
             user_name = user_data.get("displayName", "Friend")
+            
+            # Override persona with thread's persona if it exists
+            # This ensures each thread maintains its own persona
+            if thread_data.get("persona"):
+                preferences.selected_persona = thread_data["persona"]
             
             # Get user facts
             facts_ref = self.db.collection("users").document(user.uid).collection("facts")
