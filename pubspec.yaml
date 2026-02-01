@@ -1,0 +1,67 @@
+name: amorae
+description: "Amorae - Your AI Companion"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Firebase
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.6.0
+  firebase_storage: ^12.3.7
+  
+  # Google Sign-In
+  google_sign_in: ^6.2.2
+  
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  
+  # Routing
+  go_router: ^14.8.0
+  
+  # HTTP & SSE
+  dio: ^5.7.0
+  
+  # Image Handling
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
+  
+  # UI Enhancements
+  flutter_animate: ^4.5.2
+  shimmer: ^3.0.0
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.17
+  
+  # Local Storage
+  shared_preferences: ^2.3.4
+  
+  # Utils
+  uuid: ^4.5.1
+  intl: ^0.19.0
+  
+  # Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  riverpod_generator: ^2.6.3
+  build_runner: ^2.4.14
+  custom_lint: ^0.7.0
+  riverpod_lint: ^2.6.3
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
