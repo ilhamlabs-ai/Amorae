@@ -71,7 +71,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     setState(() {
       _isSending = true;
-      _isTyping = true;
+      _isTyping = false;
       _streamingContent = '';
     });
 
@@ -160,17 +160,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final messagesAsync = ref.watch(messagesProvider);
     final threadAsync = ref.watch(selectedThreadProvider);
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(threadAsync.valueOrNull),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          context.go('/home');
+        }
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.backgroundGradient,
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // Header
+                _buildHeader(threadAsync.valueOrNull),
               
               // Messages
               Expanded(
@@ -191,6 +198,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -207,7 +215,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         children: [
           // Back button
           IconButton(
-            onPressed: () => context.pop(),
+            onPressed: () => context.go('/home'),
             icon: const Icon(Icons.arrow_back_ios_new, size: 20),
             color: AppColors.textSecondary,
           ),
@@ -466,10 +474,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 Navigator.pop(context);
                 // Clear selected thread and navigate away immediately
                 ref.read(selectedThreadIdProvider.notifier).state = null;
-                if (mounted) {
-                  context.go('/home');
-                }
-                // Delete in background
+                // Schedule navigation for after this frame to avoid calling on deactivated widget
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    context.go('/home');
+                  }
+                });
+                // Delete in background  
                 final firestoreService = ref.read(firestoreServiceProvider);
                 await firestoreService.deleteThread(widget.threadId);
               },

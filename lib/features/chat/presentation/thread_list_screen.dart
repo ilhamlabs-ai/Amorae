@@ -42,7 +42,6 @@ class ThreadListScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: _buildFAB(context, ref),
     );
   }
 

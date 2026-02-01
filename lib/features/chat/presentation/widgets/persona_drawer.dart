@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/models/models.dart';
@@ -299,16 +300,36 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
 
     try {
       final firestoreService = ref.read(firestoreServiceProvider);
+      
+      // Update user's selected persona
       await firestoreService.updateUser(userId, {
         'prefs.selectedPersona': personaName,
         if (customName != null) 'prefs.customPersonaName': customName,
       });
 
+      // Find existing thread with this persona
+      final threads = await firestoreService.getUserThreads(userId);
+      final existingThread = threads.where((t) => t.persona == personaName).toList();
+      
       if (mounted) {
         Navigator.pop(context);
+        
+        if (existingThread.isNotEmpty) {
+          // Open existing thread (most recent one if multiple)
+          existingThread.sort((a, b) => b.lastMessageAt.compareTo(a.lastMessageAt));
+          context.go('/chat/${existingThread.first.id}');
+        } else {
+          // Create new thread with this persona
+          final newThread = await firestoreService.createThread(
+            userId: userId,
+            persona: personaName,
+          );
+          context.go('/chat/${newThread.id}');
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Switched to ${customName ?? personaName}'),
+            content: Text('Chatting with ${customName ?? personaName}'),
             duration: const Duration(seconds: 2),
             backgroundColor: AppColors.accent,
           ),
@@ -318,7 +339,7 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to switch persona: $e'),
+            content: Text('Failed to open chat: $e'),
             backgroundColor: AppColors.error,
           ),
         );

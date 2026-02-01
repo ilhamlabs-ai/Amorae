@@ -25,25 +25,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: userAsync.when(
-                  data: (user) => _buildContent(user),
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: AppColors.accent),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          context.go('/home');
+        }
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.backgroundGradient,
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: userAsync.when(
+                    data: (user) => _buildContent(user),
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(color: AppColors.accent),
+                    ),
+                    error: (e, _) => Center(child: Text('Error: $e')),
                   ),
-                  error: (e, _) => Center(child: Text('Error: $e')),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
