@@ -284,17 +284,18 @@ Create composite index for messages:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
+This is a private project. If you're part of the team and want to contribute, please follow these steps:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Commit your changes (`git commit -m 'Add amazing feature'`)
+3. Push to the branch (`git push origin feature/amazing-feature`)
+4. Open a Pull Request for review
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Copyright © 2026 Ilham Labs AI. All rights reserved.
+
+This is proprietary software. Unauthorized copying, distribution, modification, or use of this software is strictly prohibited.
 
 ## 🙏 Acknowledgments
 
@@ -305,21 +306,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📞 Support
 
-For issues, questions, or suggestions:
-- Create an issue on GitHub
-- Email: support@amorae.app
-
-## 🗺️ Roadmap
-
-- [ ] Voice messages support
-- [ ] Image analysis with GPT-4o vision
-- [ ] Web platform support
-- [ ] Multi-language support
-- [ ] Advanced memory visualization
-- [ ] Mood tracking and insights
-- [ ] Custom avatar generation
-- [ ] Group chat with multiple AI personalities
+For issues or questions:
+- Contact: support@ilhamlabs.ai
 
 ---
 
-**Made with 💖 by the Amorae Team**
+**Made with 💖 by Ilham Labs AI**
+
+*Copyright © 2026 Ilham Labs AI. All rights reserved.*
