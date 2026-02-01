@@ -5,6 +5,7 @@ import '../models/user_model.dart';
 import '../models/thread_model.dart';
 import '../models/message_model.dart';
 import '../models/fact_model.dart';
+import '../models/persona_model.dart';
 
 /// Firestore service for all database operations
 class FirestoreService {
@@ -121,13 +122,35 @@ class FirestoreService {
   /// Create a new thread
   Future<ThreadModel> createThread({
     required String userId,
-    String title = 'New Chat',
+    String? title,
+    String? persona,
   }) async {
+    // Get user to determine persona and generate title
+    final user = await getUser(userId);
+    final selectedPersona = persona ?? user?.prefs.selectedPersona ?? 'amora';
+    
+    // Generate title based on persona
+    String threadTitle;
+    if (title != null) {
+      threadTitle = title;
+    } else {
+      // Get persona display name
+      final personaModel = PersonaModel.getByName(selectedPersona);
+      if (personaModel != null) {
+        threadTitle = 'Chat with ${personaModel.displayName}';
+      } else {
+        // Custom persona - get custom name or default
+        final customName = user?.prefs.customPersonaName;
+        threadTitle = 'Chat with ${customName ?? selectedPersona}';
+      }
+    }
+    
     final ref = _threadsRef.doc();
     final thread = ThreadModel.create(
       id: ref.id,
       userId: userId,
-      title: title,
+      title: threadTitle,
+      persona: selectedPersona,
     );
 
     await ref.set(thread.toFirestore());

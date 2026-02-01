@@ -10,6 +10,7 @@ import '../../../shared/widgets/avatar_circle.dart';
 import '../../../shared/widgets/loading_shimmer.dart';
 import '../../../shared/providers/providers.dart';
 import '../../../shared/models/thread_model.dart';
+import 'widgets/persona_drawer.dart';
 
 /// Thread list screen (Home)
 class ThreadListScreen extends ConsumerWidget {
@@ -21,6 +22,7 @@ class ThreadListScreen extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
 
     return Scaffold(
+      drawer: const PersonaDrawer(),
       body: Container(
         decoration: const BoxDecoration(
           gradient: AppColors.backgroundGradient,
@@ -49,6 +51,25 @@ class ThreadListScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
+          // Menu button for persona drawer
+          GestureDetector(
+            onTap: () => Scaffold.of(context).openDrawer(),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.glassBorder),
+              ),
+              child: const Icon(
+                Icons.menu,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 16),
+          
           // User greeting
           Expanded(
             child: Column(
@@ -292,12 +313,32 @@ class ThreadListScreen extends ConsumerWidget {
   }
 
   Widget _buildFAB(BuildContext context, WidgetRef ref) {
-    return FloatingActionButton(
-      onPressed: () => _createNewThread(context, ref),
-      child: const Icon(Icons.add),
-    )
-        .animate()
-        .scale(delay: 400.ms, duration: 400.ms, curve: Curves.easeOutBack);
+    final threads = ref.watch(userThreadsProvider).valueOrNull ?? [];
+    final hasContinuableThread = threads.isNotEmpty;
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Continue chat FAB (if there are existing threads)
+        if (hasContinuableThread)
+          FloatingActionButton.extended(
+            onPressed: () => _continueChat(context, ref, threads),
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text('Continue'),
+            heroTag: 'continue',
+            backgroundColor: AppColors.accent,
+          ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideX(begin: 0.5, end: 0),
+        
+        if (hasContinuableThread) const SizedBox(height: 12),
+        
+        // New chat FAB
+        FloatingActionButton(
+          onPressed: () => _createNewThread(context, ref),
+          heroTag: 'new',
+          child: const Icon(Icons.add),
+        ).animate().scale(delay: 400.ms, duration: 400.ms, curve: Curves.easeOutBack),
+      ],
+    );
   }
 
   Future<void> _createNewThread(BuildContext context, WidgetRef ref) async {
@@ -311,6 +352,16 @@ class ThreadListScreen extends ConsumerWidget {
     if (context.mounted) {
       context.push(AppRoutes.chatPath(thread.id));
     }
+  }
+
+  void _continueChat(BuildContext context, WidgetRef ref, List<ThreadModel> threads) {
+    // Get the most recent thread
+    final mostRecentThread = threads.reduce((a, b) => 
+      a.lastMessageAt > b.lastMessageAt ? a : b
+    );
+    
+    ref.read(selectedThreadIdProvider.notifier).state = mostRecentThread.id;
+    context.push(AppRoutes.chatPath(mostRecentThread.id));
   }
 
   String _getGreeting() {
