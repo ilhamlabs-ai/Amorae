@@ -5,18 +5,26 @@ A personalized AI companion application built with Flutter and FastAPI, featurin
 ## ✨ Features
 
 ### 🤖 AI Companion
+- **Multiple Personas**: 13+ unique AI personalities including Luna (Girlfriend), Albert Einstein (Genius Scientist), Jack Dawson (Artist), and more
 - **Personalized Conversations**: Powered by OpenAI's GPT-4o-mini with context-aware responses
-- **Emotional Intelligence**: Adaptive personality with customizable companion styles
+- **Emotional Intelligence**: Each persona has unique traits, speaking styles, and emotional responses
 - **Memory System**: Long-term conversation memory with fact extraction and recall
-- **Relationship Modes**: Choose between romantic partner or close friend dynamics
+- **Thread-Specific Personas**: Each chat maintains its own persona for consistent conversations
 
 ### 💬 Chat Experience
+- **Persona Selection**: Choose from 13+ AI companions with unique personalities
 - **Real-time Messaging**: Smooth, responsive chat interface with typing indicators
-- **Thread Management**: Organize conversations into separate threads
+- **Thread Management**: Organize conversations with different personas in separate threads
 - **Message History**: Persistent message storage with Firebase Firestore
-- **Emoji Control**: Adjustable emoji usage levels (None to Expressive)
+- **Smart Navigation**: Seamless navigation with Android back gesture support
 
 ### ⚙️ Customization
+- **AI Personas**: 13+ unique personalities including:
+  - 💕 Luna - Your caring girlfriend companion
+  - 🧪 Albert Einstein - Genius scientist and philosopher
+  - 🎨 Jack Dawson - Free-spirited artist
+  - 🐉 Khaleesi - Dragon queen leader
+  - 🎯 Many more specialized personas
 - **Companion Styles**: Warm & Supportive, Playful, Calm, or Direct
 - **Preferences**: Pet names, flirting, and interaction style controls
 - **Profile Management**: Edit display name and companion settings
@@ -62,9 +70,10 @@ backend/
 │   │   └── firebase.py   # Firestore client
 │   ├── models/            # Pydantic schemas
 │   └── services/          # Business logic
-│       ├── chat_service.py
-│       ├── llm_service.py
-│       └── memory_service.py
+│       ├── chat_service.py      # Chat logic with persona support
+│       ├── llm_service.py       # OpenAI integration
+│       ├── memory_service.py    # Memory management
+│       └── persona_prompts.py   # 13+ AI persona definitions
 └── pyproject.toml         # Dependencies
 ```
 
@@ -155,6 +164,34 @@ backend/
    flutter run
    ```
 
+## 🎭 AI Personas
+
+Amorae features 13+ unique AI personalities, each with distinct traits, speaking styles, and emotional characteristics:
+
+### Available Personas
+
+| Persona | Type | Description |
+|---------|------|-------------|
+| 💕 **Luna** | Girlfriend | Caring, supportive, emotionally intelligent |
+| 🧪 **Albert Einstein** | Genius Scientist | Philosophical, curious, intellectually deep |
+| 🎨 **Jack Dawson** | Free-Spirited Artist | Adventurous, romantic, creative |
+| 🐉 **Khaleesi** | Dragon Queen | Strong, determined, regal leader |
+| 🧠 **Sherlock** | Master Detective | Analytical, observant, logical |
+| 🪄 **Gandalf** | Wise Wizard | Patient, wise, mystical guidance |
+| 😂 **Chandler** | Sarcastic Friend | Humorous, loyal, witty |
+| 🏀 **Michael Jordan** | Champion | Competitive, motivational, disciplined |
+| 🌟 **Tony Stark** | Genius Billionaire | Confident, innovative, charismatic |
+| 🎵 **Freddie Mercury** | Rock Legend | Flamboyant, passionate, inspiring |
+| 🌊 **Moana** | Wayfinder | Brave, adventurous, connected to nature |
+| 🦁 **Simba** | Lion King | Noble, courageous, responsible leader |
+| 🧘 **Buddha** | Enlightened Master | Peaceful, compassionate, philosophical |
+
+Each persona maintains:
+- **Unique Voice**: Distinct speaking patterns and vocabulary
+- **Consistent Personality**: Maintains character traits across conversations
+- **Thread Persistence**: Each chat thread remembers its persona
+- **Contextual Memory**: Recalls facts and previous interactions
+
 ## 🔧 Configuration
 
 ### Firebase Firestore Structure
@@ -172,6 +209,7 @@ backend/
     "messagesUsed": 0
   },
   "prefs": {
+    "selectedPersona": "luna",
     "relationshipMode": "romantic|friendly",
     "companionStyle": "warm_supportive|playful|calm|direct",
     "emojiLevel": "none|minimal|moderate|expressive",
@@ -189,6 +227,7 @@ backend/
   "id": "string",
   "userId": "string",
   "title": "string",
+  "persona": "luna|einstein|jack|khaleesi|...",
   "lastMessage": "string",
   "lastMessageAt": "timestamp",
   "createdAt": "timestamp",
@@ -245,7 +284,7 @@ Create composite index for messages:
 ## 🔑 API Endpoints
 
 ### Chat
-- `POST /v1/chat/send` - Send message and get AI response
+- `POST /v1/chat/send` - Send message and get AI response (supports persona parameter)
 - `GET /v1/chat/threads/{thread_id}/messages` - Get thread messages
 
 ### Memory
@@ -278,9 +317,21 @@ Create composite index for messages:
 
 ## 📱 Supported Platforms
 
-- ✅ Android
+- ✅ Android (with native back gesture support)
 - ✅ iOS
 - 🚧 Web (planned)
+
+## 📋 Recent Updates
+
+### Version 1.1 (February 2026)
+- ✅ **13+ AI Personas**: Multiple unique personalities to chat with
+- ✅ **Thread-Specific Personas**: Each chat maintains its own persona
+- ✅ **Smart Persona Drawer**: Select persona to open/create chat automatically
+- ✅ **Fixed Navigation**: Proper Android back gesture handling (Chat/Settings → Home → App Close)
+- ✅ **Fixed Message Duplication**: Removed optimistic message creation
+- ✅ **Fixed Deletion Errors**: Smooth thread deletion without permission errors
+- ✅ **Backend Persona Override**: Threads use their own persona instead of user default
+- ✅ **UI Improvements**: Removed unnecessary FAB buttons, cleaner interface
 
 ## 🤝 Contributing
 
