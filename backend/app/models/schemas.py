@@ -80,6 +80,8 @@ class SSEErrorEvent(BaseModel):
 
 class UserPreferences(BaseModel):
     """User AI preferences."""
+    selected_persona: str = Field("amora", alias="selectedPersona")
+    custom_persona_name: Optional[str] = Field(None, alias="customPersonaName")
     relationship_mode: str = Field("friendly", alias="relationshipMode")
     companion_style: str = Field("warm_supportive", alias="companionStyle")
     comfort_approach: str = Field("balanced", alias="comfortApproach")

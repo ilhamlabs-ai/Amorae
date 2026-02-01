@@ -5,6 +5,7 @@ class ThreadModel {
   final String id;
   final String userId;
   final String title;
+  final String? persona; // Persona name used in this thread
   final int createdAt;
   final int updatedAt;
   final int lastMessageAt;
@@ -18,6 +19,7 @@ class ThreadModel {
     required this.id,
     required this.userId,
     required this.title,
+    this.persona,
     required this.createdAt,
     required this.updatedAt,
     required this.lastMessageAt,
@@ -43,6 +45,7 @@ class ThreadModel {
       id: doc.id,
       userId: data['userId'] ?? '',
       title: data['title'] ?? 'New Chat',
+      persona: data['persona'],
       createdAt: getTimestamp(data['createdAt']),
       updatedAt: getTimestamp(data['updatedAt']),
       lastMessageAt: getTimestamp(data['lastMessageAt']),
@@ -58,6 +61,7 @@ class ThreadModel {
     return {
       'userId': userId,
       'title': title,
+      'persona': persona,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'lastMessageAt': lastMessageAt,
@@ -73,6 +77,7 @@ class ThreadModel {
     String? id,
     String? userId,
     String? title,
+    String? persona,
     int? createdAt,
     int? updatedAt,
     int? lastMessageAt,
@@ -86,6 +91,7 @@ class ThreadModel {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       title: title ?? this.title,
+      persona: persona ?? this.persona,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
@@ -102,12 +108,14 @@ class ThreadModel {
     required String id,
     required String userId,
     String title = 'New Chat',
+    String? persona,
   }) {
     final now = DateTime.now().millisecondsSinceEpoch;
     return ThreadModel(
       id: id,
       userId: userId,
       title: title,
+      persona: persona,
       createdAt: now,
       updatedAt: now,
       lastMessageAt: now,

@@ -7,6 +7,7 @@ class UserModel {
   final int updatedAt;
   final String? displayName;
   final String? photoUrl;
+  final String? gender; // Optional: male, female, other, null
   final String locale;
   final String timezone;
   final OnboardingState onboarding;
@@ -20,6 +21,7 @@ class UserModel {
     required this.updatedAt,
     this.displayName,
     this.photoUrl,
+    this.gender,
     this.locale = 'en',
     this.timezone = 'UTC',
     required this.onboarding,
@@ -36,6 +38,7 @@ class UserModel {
       updatedAt: data['updatedAt'] ?? 0,
       displayName: data['displayName'],
       photoUrl: data['photoUrl'],
+      gender: data['gender'],
       locale: data['locale'] ?? 'en',
       timezone: data['timezone'] ?? 'UTC',
       onboarding: OnboardingState.fromMap(data['onboarding'] ?? {}),
@@ -51,6 +54,7 @@ class UserModel {
       'updatedAt': updatedAt,
       'displayName': displayName,
       'photoUrl': photoUrl,
+      'gender': gender,
       'locale': locale,
       'timezone': timezone,
       'onboarding': onboarding.toMap(),
@@ -66,6 +70,7 @@ class UserModel {
     int? updatedAt,
     String? displayName,
     String? photoUrl,
+    String? gender,
     String? locale,
     String? timezone,
     OnboardingState? onboarding,
@@ -79,6 +84,7 @@ class UserModel {
       updatedAt: updatedAt ?? this.updatedAt,
       displayName: displayName ?? this.displayName,
       photoUrl: photoUrl ?? this.photoUrl,
+      gender: gender ?? this.gender,
       locale: locale ?? this.locale,
       timezone: timezone ?? this.timezone,
       onboarding: onboarding ?? this.onboarding,
@@ -207,6 +213,8 @@ class SafetySettings {
 
 /// User preferences for AI interaction
 class UserPreferences {
+  final String selectedPersona; // amora (default), einstein, gandhi, etc.
+  final String? customPersonaName; // For girlfriend/boyfriend/friend personas
   final String relationshipMode; // romantic | friendly
   final String companionStyle; // warm_supportive | playful | calm | direct
   final String comfortApproach; // validate_then_gentle_advice | solution_first | balanced
@@ -217,6 +225,8 @@ class UserPreferences {
   final List<String> phrasesToAvoid;
 
   UserPreferences({
+    this.selectedPersona = 'amora',
+    this.customPersonaName,
     this.relationshipMode = 'friendly',
     this.companionStyle = 'warm_supportive',
     this.comfortApproach = 'balanced',
@@ -229,6 +239,8 @@ class UserPreferences {
 
   factory UserPreferences.fromMap(Map<String, dynamic> map) {
     return UserPreferences(
+      selectedPersona: map['selectedPersona'] ?? 'amora',
+      customPersonaName: map['customPersonaName'],
       relationshipMode: map['relationshipMode'] ?? 'friendly',
       companionStyle: map['companionStyle'] ?? 'warm_supportive',
       comfortApproach: map['comfortApproach'] ?? 'balanced',
@@ -242,6 +254,8 @@ class UserPreferences {
 
   Map<String, dynamic> toMap() {
     return {
+      'selectedPersona': selectedPersona,
+      'customPersonaName': customPersonaName,
       'relationshipMode': relationshipMode,
       'companionStyle': companionStyle,
       'comfortApproach': comfortApproach,
@@ -258,6 +272,8 @@ class UserPreferences {
   }
 
   UserPreferences copyWith({
+    String? selectedPersona,
+    String? customPersonaName,
     String? relationshipMode,
     String? companionStyle,
     String? comfortApproach,
@@ -268,6 +284,8 @@ class UserPreferences {
     List<String>? phrasesToAvoid,
   }) {
     return UserPreferences(
+      selectedPersona: selectedPersona ?? this.selectedPersona,
+      customPersonaName: customPersonaName ?? this.customPersonaName,
       relationshipMode: relationshipMode ?? this.relationshipMode,
       companionStyle: companionStyle ?? this.companionStyle,
       comfortApproach: comfortApproach ?? this.comfortApproach,

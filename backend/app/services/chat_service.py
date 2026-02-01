@@ -119,6 +119,7 @@ class ChatService:
         full_response = await self.llm.generate(
             messages=messages,
             user_name=user_name,
+            user_gender=user_data.get("gender"),
             preferences=preferences,
             facts=facts,
             summary=summary,

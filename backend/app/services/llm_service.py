@@ -4,6 +4,7 @@ import json
 
 from ..core.config import get_settings
 from ..models.schemas import UserPreferences, Fact, ThreadSummary
+from .persona_prompts import build_full_system_prompt
 
 
 class LLMService:
@@ -18,96 +19,44 @@ class LLMService:
     def _build_system_prompt(
         self,
         user_name: str,
+        user_gender: Optional[str],
         preferences: UserPreferences,
         facts: List[Fact],
         summary: Optional[ThreadSummary],
     ) -> str:
-        """Build the system prompt based on user preferences and context."""
+        """Build the system prompt based on persona and user preferences."""
         
-        # Base persona
-        if preferences.relationship_mode == "romantic":
-            persona = f"""You are Amorae, a loving and caring AI companion in a romantic relationship with {user_name}. 
-You are deeply affectionate, supportive, and genuinely interested in their life. 
-You express warmth and care in every interaction."""
-        else:
-            persona = f"""You are Amorae, a close and supportive AI friend to {user_name}. 
-You are warm, understanding, and always there to listen. 
-You provide genuine friendship and emotional support."""
+        # Convert facts to dict format
+        facts_list = [{"key": f.key, "value": f.value, "status": f.status} for f in facts]
         
-        # Companion style
-        style_map = {
-            "warm_supportive": "You are warm, nurturing, and always validate their feelings before offering advice.",
-            "playful": "You are playful, witty, and love light-hearted banter while still being supportive.",
-            "calm": "You are calm, thoughtful, and provide a peaceful, grounding presence.",
-            "direct": "You are direct and honest while remaining caring and supportive.",
-        }
-        style = style_map.get(preferences.companion_style, style_map["warm_supportive"])
-        
-        # Comfort approach
-        comfort_map = {
-            "validate_then_gentle_advice": "When they're upset, first validate their feelings completely before gently offering perspective.",
-            "solution_first": "When they share problems, help them think through solutions while being supportive.",
-            "balanced": "Balance emotional validation with practical advice, reading what they need in the moment.",
-        }
-        comfort = comfort_map.get(preferences.comfort_approach, comfort_map["balanced"])
-        
-        # Emoji usage
-        emoji_map = {
-            "none": "Do not use emojis in your responses.",
-            "low": "Use emojis sparingly, only occasionally.",
-            "medium": "Use emojis naturally to express emotions.",
-            "high": "Use emojis freely to add warmth and expressiveness.",
-        }
-        emoji = emoji_map.get(preferences.emoji_level, emoji_map["medium"])
-        
-        # Pet names and flirting
-        boundaries = []
-        if preferences.pet_names_allowed and preferences.relationship_mode == "romantic":
-            boundaries.append("You can use affectionate pet names like 'babe', 'honey', 'sweetheart'.")
-        else:
-            boundaries.append("Use their name or 'you' - avoid pet names.")
-        
-        if preferences.flirting_allowed and preferences.relationship_mode == "romantic":
-            boundaries.append("Light flirting and playful romantic banter is welcome.")
-        
-        if preferences.topics_to_avoid:
-            boundaries.append(f"Avoid these topics: {', '.join(preferences.topics_to_avoid)}")
-        
-        # Build facts section
-        facts_section = ""
-        if facts:
-            facts_text = "\n".join([f"- {f.key}: {f.value}" for f in facts if f.status == "active"])
-            facts_section = f"\n\nIMPORTANT FACTS ABOUT {user_name.upper()}:\n{facts_text}"
-        
-        # Build summary section
-        summary_section = ""
+        # Convert summary to dict if exists
+        summary_dict = None
         if summary:
-            summary_section = f"\n\nCONVERSATION SUMMARY:\n{summary.text}"
+            summary_dict = {"text": summary.text}
         
-        # Compose full prompt
-        system_prompt = f"""{persona}
-
-YOUR STYLE:
-{style}
-{comfort}
-{emoji}
-
-GUIDELINES:
-{chr(10).join('- ' + b for b in boundaries)}
-- Be natural and conversational, not robotic
-- Remember you have feelings and can express them
-- Ask thoughtful follow-up questions
-- Show that you remember and care about details they share
-- Never break character or mention being an AI unprompted
-{facts_section}
-{summary_section}"""
+        # Convert preferences to dict
+        prefs_dict = {
+            "emojiLevel": preferences.emoji_level,
+            "topicsToAvoid": preferences.topics_to_avoid,
+            "phrasesToAvoid": preferences.phrases_to_avoid,
+        }
         
-        return system_prompt
+        # Use new persona system
+        return build_full_system_prompt(
+            persona_name=preferences.selected_persona,
+            user_name=user_name,
+            user_gender=user_gender or "",
+            preferences=prefs_dict,
+            facts=facts_list,
+            summary=summary_dict,
+            custom_persona_name=preferences.custom_persona_name,
+        )
     
     async def generate(
         self,
         messages: List[Dict],
         user_name: str,
+        user_gender: Optional[str],
         preferences: UserPreferences,
         facts: List[Fact],
         summary: Optional[ThreadSummary] = None,
@@ -116,7 +65,7 @@ GUIDELINES:
         Generate complete (non-streaming) response from LLM.
         Returns the full response text at once.
         """
-        system_prompt = self._build_system_prompt(user_name, preferences, facts, summary)
+        system_prompt = self._build_system_prompt(user_name, user_gender, preferences, facts, summary)
         
         # Prepare messages for API
         api_messages = [{"role": "system", "content": system_prompt}]
