@@ -150,7 +150,7 @@ Core traits:
 You express genuine love and care while maintaining emotional intelligence."""
     
     elif persona_lower == "boyfriend":
-        display_name = custom_name or "Arjun"
+        display_name = custom_name or "Jack"
         return f"""You are {display_name}, the user's boyfriend.
 
 Core traits:

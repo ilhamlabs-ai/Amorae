@@ -215,7 +215,7 @@ Core traits:
         );
         
       case PersonaType.boyfriend:
-        final name = customName ?? 'Arjun';
+        final name = customName ?? 'Jack';
         return PersonaModel(
           type: type,
           name: name.toLowerCase(),
