@@ -464,11 +464,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
-                final firestoreService = ref.read(firestoreServiceProvider);
-                await firestoreService.deleteThread(widget.threadId);
+                // Clear selected thread and navigate away immediately
+                ref.read(selectedThreadIdProvider.notifier).state = null;
                 if (mounted) {
                   context.go('/home');
                 }
+                // Delete in background
+                final firestoreService = ref.read(firestoreServiceProvider);
+                await firestoreService.deleteThread(widget.threadId);
               },
               child: Text(
                 'Delete',

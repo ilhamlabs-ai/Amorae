@@ -60,8 +60,14 @@ class ChatService:
         
         # Override persona with thread's persona if it exists
         # This ensures each thread maintains its own persona
-        if thread_data.get("persona"):
-            preferences.selected_persona = thread_data["persona"]
+        thread_persona = thread_data.get("persona")
+        if thread_persona:
+            print(f"🎭 Using thread persona: {thread_persona}")
+            preferences.selected_persona = thread_persona
+        else:
+            print(f"⚠️ No persona in thread, using user default: {preferences.selected_persona}")
+            # Update thread with current persona for future messages
+            thread_ref.update({"persona": preferences.selected_persona})
         
         # Get user facts
         facts_ref = self.db.collection("users").document(user.uid).collection("facts")
@@ -203,8 +209,14 @@ class ChatService:
             
             # Override persona with thread's persona if it exists
             # This ensures each thread maintains its own persona
-            if thread_data.get("persona"):
-                preferences.selected_persona = thread_data["persona"]
+            thread_persona = thread_data.get("persona")
+            if thread_persona:
+                print(f"🎭 Using thread persona: {thread_persona}")
+                preferences.selected_persona = thread_persona
+            else:
+                print(f"⚠️ No persona in thread, using user default: {preferences.selected_persona}")
+                # Update thread with current persona for future messages
+                thread_ref.update({"persona": preferences.selected_persona})
             
             # Get user facts
             facts_ref = self.db.collection("users").document(user.uid).collection("facts")

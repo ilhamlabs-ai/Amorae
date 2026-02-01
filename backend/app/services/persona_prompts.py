@@ -206,6 +206,8 @@ def build_full_system_prompt(
     Returns:
         Complete system prompt
     """
+    print(f"🎭 Building system prompt for persona: {persona_name}")
+    
     # Get base persona prompt
     persona_prompt = get_persona_prompt(persona_name, custom_persona_name, user_gender)
     
