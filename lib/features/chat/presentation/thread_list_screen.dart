@@ -347,12 +347,80 @@ class ThreadListScreen extends ConsumerWidget {
     if (userId == null) return;
 
     final firestoreService = ref.read(firestoreServiceProvider);
+    final user = await firestoreService.getUser(userId);
+    final selectedPersona = user?.prefs.selectedPersona ?? 'amora';
+    
+    // If girlfriend/boyfriend/friend, ask for custom name
+    String? customName;
+    if (selectedPersona == 'girlfriend' || selectedPersona == 'boyfriend' || selectedPersona == 'friend') {
+      customName = await _showCustomNameDialog(context, selectedPersona);
+      if (customName == null || customName.isEmpty) return; // User cancelled
+      
+      // Save custom name to user prefs
+      await firestoreService.updateUser(userId, {
+        'prefs': user?.prefs.copyWith(customPersonaName: customName).toMap() ?? {'customPersonaName': customName},
+      });
+    }
+    
     final thread = await firestoreService.createThread(userId: userId);
     
     ref.read(selectedThreadIdProvider.notifier).state = thread.id;
     if (context.mounted) {
       context.push(AppRoutes.chatPath(thread.id));
     }
+  }
+
+  Future<String?> _showCustomNameDialog(BuildContext context, String persona) async {
+    final controller = TextEditingController();
+    String defaultName = persona == 'girlfriend' ? 'Luna' : (persona == 'boyfriend' ? 'Jack' : 'Alex');
+    
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'What should I call your ${persona == 'girlfriend' ? 'girlfriend' : (persona == 'boyfriend' ? 'boyfriend' : 'friend')}?',
+          style: AppTextStyles.titleMedium,
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: AppTextStyles.bodyLarge,
+          decoration: InputDecoration(
+            hintText: defaultName,
+            hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textTertiary),
+            filled: true,
+            fillColor: AppColors.background,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.glassBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.glassBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.accent, width: 2),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              Navigator.pop(context, name.isEmpty ? defaultName : name);
+            },
+            child: Text('Continue', style: AppTextStyles.button.copyWith(color: AppColors.accent)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _continueChat(BuildContext context, WidgetRef ref, List<ThreadModel> threads) {

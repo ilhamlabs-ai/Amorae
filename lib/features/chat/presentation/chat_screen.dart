@@ -35,6 +35,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isTyping = false;
   String _streamingContent = '';
   String? _streamingMessageId;
+  int _previousMessageCount = 0;
 
   @override
   void initState() {
@@ -43,15 +44,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(selectedThreadIdProvider.notifier).state = widget.threadId;
       _scrollToBottom(animate: false);
-    });
-  }
-
-  @override
-  void didUpdateWidget(ChatScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Auto-scroll when messages update
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
     });
   }
 
@@ -162,6 +154,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(messagesProvider);
     final threadAsync = ref.watch(selectedThreadProvider);
+
+    // Auto-scroll when new messages arrive
+    ref.listen<AsyncValue<List<MessageModel>>>(messagesProvider, (previous, next) {
+      next.whenData((messages) {
+        if (messages.length > _previousMessageCount) {
+          _previousMessageCount = messages.length;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
+        }
+      });
+    });
 
     return PopScope(
       canPop: false,
