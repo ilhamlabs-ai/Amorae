@@ -21,34 +21,9 @@ class ThreadListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final threadsAsync = ref.watch(userThreadsProvider);
     final currentUser = ref.watch(currentUserProvider);
-    final user = currentUser.valueOrNull;
-    final isSingleMode = user?.prefs.companionMode == 'single';
-
-    // For single mode users: redirect to companion selection if no threads exist
-    // Only redirect when we have confirmed data (not loading)
-    if (isSingleMode && 
-        currentUser.hasValue && 
-        threadsAsync.hasValue && 
-        threadsAsync.value!.isEmpty) {
-      // Use Future.microtask to avoid build-time navigation issues
-      Future.microtask(() {
-        if (context.mounted) {
-          context.go('/companion-selection');
-        }
-      });
-      return Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-          child: const Center(
-            child: CircularProgressIndicator(color: AppColors.accent),
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
-      // Only show drawer for multiple companion mode
-      drawer: isSingleMode ? null : const PersonaDrawer(),
+      drawer: const PersonaDrawer(),
       body: Container(
         decoration: const BoxDecoration(
           gradient: AppColors.backgroundGradient,
@@ -72,33 +47,30 @@ class ThreadListScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, WidgetRef ref, dynamic user) {
-    final isSingleMode = user?.prefs.companionMode == 'single';
-    
     return Container(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          // Menu button for persona drawer (only show in multiple mode)
-          if (!isSingleMode)
-            Builder(
-              builder: (context) => GestureDetector(
-                onTap: () => Scaffold.of(context).openDrawer(),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.glassBorder),
-                  ),
-                  child: const Icon(
-                    Icons.menu,
-                    color: AppColors.textSecondary,
-                  ),
+          // Menu button for persona drawer
+          Builder(
+            builder: (context) => GestureDetector(
+              onTap: () => Scaffold.of(context).openDrawer(),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.glassBorder),
+                ),
+                child: const Icon(
+                  Icons.menu,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
+          ),
           
-          if (!isSingleMode) const SizedBox(width: 16),
+          const SizedBox(width: 16),
           
           // User greeting
           Expanded(
@@ -150,9 +122,6 @@ class ThreadListScreen extends ConsumerWidget {
       return _buildEmptyState(context, ref);
     }
 
-    final user = ref.watch(currentUserProvider).valueOrNull;
-    final isSingleMode = user?.prefs.companionMode == 'single';
-
     return Column(
       children: [
         Expanded(
@@ -168,20 +137,18 @@ class ThreadListScreen extends ConsumerWidget {
             },
           ),
         ),
-        // Show FAB only in multiple mode or if single mode has no threads
-        if (!isSingleMode || threads.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: FloatingActionButton.extended(
-              onPressed: () => _createNewThread(context, ref),
-              backgroundColor: AppColors.primaryStart,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(
-                'New Chat',
-                style: AppTextStyles.button.copyWith(color: Colors.white),
-              ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: FloatingActionButton.extended(
+            onPressed: () => _createNewThread(context, ref),
+            backgroundColor: AppColors.primaryStart,
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: Text(
+              'New Chat',
+              style: AppTextStyles.button.copyWith(color: Colors.white),
             ),
           ),
+        ),
       ],
     );
   }
@@ -401,34 +368,29 @@ class ThreadListScreen extends ConsumerWidget {
     final firestoreService = ref.read(firestoreServiceProvider);
     final user = await firestoreService.getUser(userId);
     
-    // Determine which persona to use based on companion mode
-    String? selectedPersona;
-    final companionMode = user?.prefs.companionMode ?? 'multiple';
+    // Always let user choose a persona
+    final selectedPersona = await _showPersonaSelectorDialog(context, user?.prefs.selectedPersona ?? 'girlfriend');
+    if (selectedPersona == null) return; // User cancelled
     
-    if (companionMode == 'single') {
-      // Single mode: Navigate to companion selection if they don't have one yet
-      if (context.mounted) {
-        context.push('/companion-selection');
-      }
-      return;
-    } else {
-      // Multiple mode: Let them choose
-      selectedPersona = await _showPersonaSelectorDialog(context, user?.prefs.selectedPersona ?? 'girlfriend');
-      if (selectedPersona == null) return; // User cancelled
-    }
+    debugPrint('🎭 Selected persona: $selectedPersona');
     
     // If girlfriend/boyfriend/friend, ask for custom name
     String? customName;
     if (selectedPersona == 'girlfriend' || selectedPersona == 'boyfriend' || selectedPersona == 'friend') {
       customName = await _showCustomNameDialog(context, selectedPersona);
+      debugPrint('📛 Custom name from dialog: $customName');
       if (customName == null) return; // User cancelled
     }
+    
+    debugPrint('🔵 Creating thread with persona=$selectedPersona, customName=$customName');
     
     final thread = await firestoreService.createThread(
       userId: userId,
       persona: selectedPersona,
       customPersonaName: customName,
     );
+    
+    debugPrint('✅ Thread created: id=${thread.id}, persona=${thread.persona}, customName=${thread.customPersonaName}');
     
     ref.read(selectedThreadIdProvider.notifier).state = thread.id;
     if (context.mounted) {

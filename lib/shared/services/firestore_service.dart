@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../models/thread_model.dart';
 import '../models/message_model.dart';
@@ -147,7 +148,7 @@ class FirestoreService {
       }
     }
     
-    print('🔵 Creating thread: persona=$selectedPersona, customName=$customPersonaName, title=$threadTitle');
+    debugPrint('🔵 Creating thread: persona=$selectedPersona, customName=$customPersonaName, title=$threadTitle');
     
     final ref = _threadsRef.doc();
     final thread = ThreadModel.create(
@@ -158,8 +159,11 @@ class FirestoreService {
       customPersonaName: customPersonaName,
     );
 
-    await ref.set(thread.toFirestore());
-    print('✅ Thread created: id=${thread.id}, customPersonaName=${thread.customPersonaName}');
+    final firestoreData = thread.toFirestore();
+    debugPrint('📝 Firestore data: ${firestoreData.toString()}');
+    
+    await ref.set(firestoreData);
+    debugPrint('✅ Thread created: id=${thread.id}, customPersonaName=${thread.customPersonaName}');
     return thread;
   }
 
