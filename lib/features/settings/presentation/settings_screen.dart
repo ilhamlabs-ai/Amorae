@@ -102,6 +102,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           
           const SizedBox(height: 24),
           
+          // Personal Info
+          _buildSectionTitle('Personal Info'),
+          const SizedBox(height: 12),
+          _buildPersonalInfoSection(user)
+              .animate()
+              .fadeIn(delay: 100.ms, duration: 400.ms),
+          
+          const SizedBox(height: 24),
+          
           // Companion settings
           _buildSectionTitle('Companion Settings'),
           const SizedBox(height: 12),
@@ -198,11 +207,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _buildPersonalInfoSection(UserModel user) {
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _buildSettingsTile(
+            icon: Icons.wc,
+            title: 'Gender',
+            subtitle: _formatGender(user.gender),
+            onTap: () => _showGenderPicker(user),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCompanionSettings(UserModel user) {
     return GlassCard(
       padding: EdgeInsets.zero,
       child: Column(
         children: [
+          _buildSettingsTile(
+            icon: user.prefs.companionMode == 'single' ? Icons.person : Icons.groups,
+            title: 'Companion Mode',
+            subtitle: user.prefs.companionMode == 'single'
+                ? 'Single Companion'
+                : 'Multiple Companions',
+            onTap: () => _showCompanionModePicker(user),
+          ),
+          const Divider(color: AppColors.glassBorder, height: 1),
           _buildSettingsTile(
             icon: Icons.favorite_outline,
             title: 'Relationship Mode',
@@ -211,6 +245,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 : 'Close Friend',
             onTap: () => _showRelationshipPicker(user),
           ),
+          if (user.prefs.selectedPersona == 'girlfriend' ||
+              user.prefs.selectedPersona == 'boyfriend' ||
+              user.prefs.selectedPersona == 'friend') ...[
+            const Divider(color: AppColors.glassBorder, height: 1),
+            _buildSettingsTile(
+              icon: Icons.badge_outlined,
+              title: 'Companion Name',
+              subtitle: user.prefs.customPersonaName ?? 'Not set',
+              onTap: () => _showCustomNameDialog(user),
+            ),
+          ],
           const Divider(color: AppColors.glassBorder, height: 1),
           _buildSettingsTile(
             icon: Icons.psychology_outlined,
@@ -272,6 +317,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Help & Support',
             subtitle: 'Get help with Amorae',
             onTap: () {},
+          ),
+          const Divider(color: AppColors.glassBorder, height: 1),
+          _buildSettingsTile(
+            icon: Icons.delete_forever_outlined,
+            title: 'Delete Account',
+            subtitle: 'Permanently delete your account',
+            titleColor: AppColors.error,
+            onTap: _deleteAccount,
           ),
           const Divider(color: AppColors.glassBorder, height: 1),
           _buildSettingsTile(
@@ -350,6 +403,270 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         value: value,
         onChanged: onChanged,
         activeColor: AppColors.accent,
+      ),
+    );
+  }
+
+  void _showRelationshipPicker(UserModel user) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('Relationship Mode', style: AppTextStyles.headlineSmall),
+              const SizedBox(height: 16),
+              _buildRelationshipOption(
+                title: 'Romantic Partner',
+                icon: Icons.favorite,
+                isSelected: user.prefs.relationshipMode == 'romantic',
+                onTap: () {
+                  Navigator.pop(context);
+                  _updatePreference('relationshipMode', 'romantic');
+                },
+              ),
+              _buildRelationshipOption(
+                title: 'Close Friend',
+                icon: Icons.people,
+                isSelected: user.prefs.relationshipMode == 'friendly',
+                onTap: () {
+                  Navigator.pop(context);
+                  _updatePreference('relationshipMode', 'friendly');
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showGenderPicker(UserModel user) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('Select Gender', style: AppTextStyles.headlineSmall),
+              const SizedBox(height: 16),
+              _buildGenderOption(
+                title: 'Male',
+                icon: Icons.male,
+                isSelected: user.gender == 'male',
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateGender('male');
+                },
+              ),
+              _buildGenderOption(
+                title: 'Female',
+                icon: Icons.female,
+                isSelected: user.gender == 'female',
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateGender('female');
+                },
+              ),
+              _buildGenderOption(
+                title: 'Non-binary',
+                icon: Icons.wc,
+                isSelected: user.gender == 'other',
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateGender('other');
+                },
+              ),
+              _buildGenderOption(
+                title: 'Prefer not to say',
+                icon: Icons.remove_circle_outline,
+                isSelected: user.gender == 'prefer-not-to-say',
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateGender('prefer-not-to-say');
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCompanionModePicker(UserModel user) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('Companion Mode', style: AppTextStyles.headlineSmall),
+              const SizedBox(height: 16),
+              _buildRelationshipOption(
+                title: 'Single Companion',
+                icon: Icons.person,
+                isSelected: user.prefs.companionMode == 'single',
+                onTap: () {
+                  Navigator.pop(context);
+                  _updatePreference('companionMode', 'single');
+                },
+              ),
+              _buildRelationshipOption(
+                title: 'Multiple Companions',
+                icon: Icons.groups,
+                isSelected: user.prefs.companionMode == 'multiple',
+                onTap: () {
+                  Navigator.pop(context);
+                  _updatePreference('companionMode', 'multiple');
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCustomNameDialog(UserModel user) {
+    final controller = TextEditingController(text: user.prefs.customPersonaName ?? '');
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Companion Name', style: AppTextStyles.headlineSmall),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: AppTextStyles.bodyLarge,
+            decoration: InputDecoration(
+              hintText: 'Enter name',
+              hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textTertiary),
+              filled: true,
+              fillColor: AppColors.background,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.glassBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.glassBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.accent, width: 2),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _updatePreference('customPersonaName', controller.text.trim());
+              },
+              child: Text('Save', style: AppTextStyles.button.copyWith(color: AppColors.accent)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildGenderOption({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.accent.withOpacity(0.1) : null,
+          border: Border(
+            left: BorderSide(
+              color: isSelected ? AppColors.accent : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.accent : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: isSelected ? AppColors.accent : AppColors.textPrimary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                color: AppColors.accent,
+                size: 20,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -664,8 +981,175 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _signOut() async {
+  Future<void> _updateGender(String gender) async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final userId = ref.read(currentUserIdProvider);
+      if (userId != null) {
+        final firestoreService = ref.read(firestoreServiceProvider);
+        await firestoreService.updateUser(userId, {
+          'gender': gender,
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gender updated'),
+              duration: Duration(seconds: 1),
+              backgroundColor: AppColors.accent,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _deleteAccount() async {
     showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28),
+              const SizedBox(width: 12),
+              Text('Delete Account?', style: AppTextStyles.headlineSmall),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This action cannot be undone. All your data will be permanently deleted:',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildDeleteItem('All conversations and messages'),
+              _buildDeleteItem('All companion settings'),
+              _buildDeleteItem('All personal preferences'),
+              _buildDeleteItem('Your account and profile'),
+              const SizedBox(height: 12),
+              Text(
+                'Are you absolutely sure?',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.button.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _confirmDeleteAccount();
+              },
+              child: Text(
+                'Delete Forever',
+                style: AppTextStyles.button.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDeleteItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(Icons.close, color: AppColors.error, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final userId = ref.read(currentUserIdProvider);
+      if (userId != null) {
+        final firestoreService = ref.read(firestoreServiceProvider);
+        final authService = ref.read(authServiceProvider);
+        
+        // Delete all user data from Firestore
+        await firestoreService.deleteUser(userId);
+        
+        // Delete Firebase Auth account
+        await authService.deleteAccount();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account deleted successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.go(AppRoutes.login);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete account: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signOut() async {
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -724,6 +1208,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return 'Direct';
       default:
         return style;
+    }
+  }
+
+  String _formatGender(String? gender) {
+    switch (gender) {
+      case 'male':
+        return 'Male';
+      case 'female':
+        return 'Female';
+      case 'other':
+        return 'Non-binary';
+      case 'prefer-not-to-say':
+        return 'Prefer not to say';
+      default:
+        return 'Not set';
     }
   }
 }

@@ -346,4 +346,46 @@ class FirestoreService {
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     });
   }
+
+  /// Delete all user data (threads, messages, facts, and user document)
+  Future<void> deleteUser(String userId) async {
+    print('🗑️ Starting user deletion for userId: $userId');
+    
+    try {
+      // Delete all threads and their messages
+      print('🗑️ Deleting threads...');
+      final threadsSnapshot = await _threadsRef(userId).get();
+      
+      for (final threadDoc in threadsSnapshot.docs) {
+        final threadId = threadDoc.id;
+        print('🗑️ Deleting thread: $threadId');
+        
+        // Delete all messages in thread
+        final messagesSnapshot = await _messagesRef(userId, threadId).get();
+        for (final messageDoc in messagesSnapshot.docs) {
+          await messageDoc.reference.delete();
+        }
+        
+        // Delete thread document
+        await threadDoc.reference.delete();
+      }
+      
+      // Delete all facts
+      print('🗑️ Deleting facts...');
+      final factsSnapshot = await _factsRef(userId).get();
+      for (final factDoc in factsSnapshot.docs) {
+        await factDoc.reference.delete();
+      }
+      
+      // Delete user document
+      print('🗑️ Deleting user document...');
+      await _userRef(userId).delete();
+      
+      print('✅ User deletion completed successfully');
+    } catch (e, stackTrace) {
+      print('❌ Error deleting user: $e');
+      print('📚 Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
 }
