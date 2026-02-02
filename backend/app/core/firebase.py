@@ -21,9 +21,10 @@ def init_firebase() -> firebase_admin.App:
     
     settings = get_settings()
     
-    # Initialize with credentials
-    if settings.google_application_credentials:
-        cred = credentials.Certificate(settings.google_application_credentials)
+    # Initialize with credentials (check both field names)
+    creds_path = settings.credentials_path
+    if creds_path and os.path.exists(creds_path):
+        cred = credentials.Certificate(creds_path)
         _firebase_app = firebase_admin.initialize_app(cred, {
             'projectId': settings.firebase_project_id,
         })
@@ -61,12 +62,14 @@ async def verify_firebase_token(token: str) -> dict:
 
 
 def get_firestore_client():
-    """Get Firestore client for the 'amorae' database."""
+    """Get Firestore client for the configured database."""
     global _firestore_client
     
     if _firestore_client is None:
         get_firebase_app()
-        # Use the named "amorae" database instead of "(default)"
-        _firestore_client = firestore.client(database_id='amorae')
+        settings = get_settings()
+        # Use the configured database name
+        database_id = settings.firebase_database_id or 'amorae'
+        _firestore_client = firestore.client(database_id=database_id)
     
     return _firestore_client
