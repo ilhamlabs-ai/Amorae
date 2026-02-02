@@ -124,6 +124,7 @@ class FirestoreService {
     required String userId,
     String? title,
     String? persona,
+    String? customPersonaName,
   }) async {
     // Get user to determine persona and generate title
     final user = await getUser(userId);
@@ -139,9 +140,8 @@ class FirestoreService {
       if (personaModel != null) {
         threadTitle = 'Chat with ${personaModel.displayName}';
       } else {
-        // Custom persona - get custom name or default
-        final customName = user?.prefs.customPersonaName;
-        threadTitle = 'Chat with ${customName ?? selectedPersona}';
+        // Custom persona - use custom name or default
+        threadTitle = 'Chat with ${customPersonaName ?? selectedPersona}';
       }
     }
     
@@ -151,6 +151,7 @@ class FirestoreService {
       userId: userId,
       title: threadTitle,
       persona: selectedPersona,
+      customPersonaName: customPersonaName,
     );
 
     await ref.set(thread.toFirestore());

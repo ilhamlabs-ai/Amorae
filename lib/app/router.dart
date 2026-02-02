@@ -7,6 +7,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/chat/presentation/thread_list_screen.dart';
 import '../features/chat/presentation/chat_screen.dart';
+import '../features/chat/presentation/companion_selection_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 
 /// App routes
@@ -14,6 +15,7 @@ class AppRoutes {
   static const splash = '/';
   static const login = '/login';
   static const onboarding = '/onboarding';
+  static const companionSelection = '/companion-selection';
   static const home = '/home';
   static const chat = '/chat/:threadId';
   static const settings = '/settings';
@@ -118,6 +120,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.companionSelection,
+        builder: (context, state) => const CompanionSelectionScreen(),
       ),
       GoRoute(
         path: AppRoutes.home,

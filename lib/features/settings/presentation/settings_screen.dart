@@ -224,18 +224,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildCompanionSettings(UserModel user) {
+    final isSingleMode = user.companionMode == 'single';
+    
     return GlassCard(
       padding: EdgeInsets.zero,
       child: Column(
         children: [
           _buildSettingsTile(
-            icon: user.prefs.companionMode == 'single' ? Icons.person : Icons.groups,
+            icon: isSingleMode ? Icons.person : Icons.groups,
             title: 'Companion Mode',
-            subtitle: user.prefs.companionMode == 'single'
+            subtitle: isSingleMode
                 ? 'Single Companion'
                 : 'Multiple Companions',
             onTap: () => _showCompanionModePicker(user),
           ),
+          // Show companion management for single mode
+          if (isSingleMode) ...[
+            const Divider(color: AppColors.glassBorder, height: 1),
+            _buildSettingsTile(
+              icon: Icons.favorite_outline,
+              title: 'My Companion',
+              subtitle: user.prefs.selectedPersona != null
+                  ? _formatPersona(user.prefs.selectedPersona!)
+                  : 'Not selected',
+              onTap: () => _manageCompanion(user),
+            ),
+          ],
           const Divider(color: AppColors.glassBorder, height: 1),
           _buildSettingsTile(
             icon: Icons.favorite_outline,
@@ -1175,6 +1189,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       default:
         return 'Not set';
     }
+  }
+
+  String _formatPersona(String persona) {
+    switch (persona) {
+      case 'girlfriend':
+        return 'Girlfriend';
+      case 'boyfriend':
+        return 'Boyfriend';
+      case 'friend':
+        return 'Friend';
+      default:
+        return persona.capitalize();
+    }
+  }
+
+  Future<void> _manageCompanion(UserModel user) async {
+    return showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Manage Companion',
+              style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.edit, color: AppColors.primary),
+              title: const Text('Change Companion Type'),
+              subtitle: Text('Current: ${_formatPersona(user.prefs.selectedPersona ?? '')}'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/companion-selection');
+              },
+            ),
+            if (user.prefs.selectedPersona == 'girlfriend' ||
+                user.prefs.selectedPersona == 'boyfriend' ||
+                user.prefs.selectedPersona == 'friend')
+              ListTile(
+                leading: const Icon(Icons.badge, color: AppColors.accent),
+                title: const Text('Change Companion Name'),
+                subtitle: Text(user.prefs.customPersonaName ?? 'Not set'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showCustomNameDialog(user);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

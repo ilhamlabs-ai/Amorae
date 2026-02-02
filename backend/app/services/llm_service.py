@@ -23,6 +23,7 @@ class LLMService:
         preferences: UserPreferences,
         facts: List[Fact],
         summary: Optional[ThreadSummary],
+        custom_persona_name: Optional[str] = None,
     ) -> str:
         """Build the system prompt based on persona and user preferences."""
         
@@ -41,6 +42,9 @@ class LLMService:
             "phrasesToAvoid": preferences.phrases_to_avoid,
         }
         
+        # Use thread's custom name if provided, otherwise use user's preference
+        persona_custom_name = custom_persona_name or preferences.custom_persona_name
+        
         # Use new persona system
         return build_full_system_prompt(
             persona_name=preferences.selected_persona,
@@ -49,7 +53,7 @@ class LLMService:
             preferences=prefs_dict,
             facts=facts_list,
             summary=summary_dict,
-            custom_persona_name=preferences.custom_persona_name,
+            custom_persona_name=persona_custom_name,
         )
     
     async def generate(
@@ -60,12 +64,13 @@ class LLMService:
         preferences: UserPreferences,
         facts: List[Fact],
         summary: Optional[ThreadSummary] = None,
+        custom_persona_name: Optional[str] = None,
     ) -> str:
         """
         Generate complete (non-streaming) response from LLM.
         Returns the full response text at once.
         """
-        system_prompt = self._build_system_prompt(user_name, user_gender, preferences, facts, summary)
+        system_prompt = self._build_system_prompt(user_name, user_gender, preferences, facts, summary, custom_persona_name)
         
         # Prepare messages for API
         api_messages = [{"role": "system", "content": system_prompt}]
@@ -118,16 +123,18 @@ class LLMService:
         self,
         messages: List[Dict],
         user_name: str,
+        user_gender: Optional[str],
         preferences: UserPreferences,
         facts: List[Fact],
         summary: Optional[ThreadSummary] = None,
+        custom_persona_name: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         """
         Generate streaming response from LLM.
         
         Yields text chunks as they are generated.
         """
-        system_prompt = self._build_system_prompt(user_name, preferences, facts, summary)
+        system_prompt = self._build_system_prompt(user_name, user_gender, preferences, facts, summary, custom_persona_name)
         
         # Prepare messages for API
         api_messages = [{"role": "system", "content": system_prompt}]

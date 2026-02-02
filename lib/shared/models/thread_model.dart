@@ -6,6 +6,7 @@ class ThreadModel {
   final String userId;
   final String title;
   final String? persona; // Persona name used in this thread
+  final String? customPersonaName; // Custom name for girlfriend/boyfriend/friend
   final int createdAt;
   final int updatedAt;
   final int lastMessageAt;
@@ -20,6 +21,7 @@ class ThreadModel {
     required this.userId,
     required this.title,
     this.persona,
+    this.customPersonaName,
     required this.createdAt,
     required this.updatedAt,
     required this.lastMessageAt,
@@ -46,6 +48,7 @@ class ThreadModel {
       userId: data['userId'] ?? '',
       title: data['title'] ?? 'New Chat',
       persona: data['persona'],
+      customPersonaName: data['customPersonaName'],
       createdAt: getTimestamp(data['createdAt']),
       updatedAt: getTimestamp(data['updatedAt']),
       lastMessageAt: getTimestamp(data['lastMessageAt']),
@@ -62,6 +65,7 @@ class ThreadModel {
       'userId': userId,
       'title': title,
       'persona': persona,
+      'customPersonaName': customPersonaName,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'lastMessageAt': lastMessageAt,
@@ -78,6 +82,7 @@ class ThreadModel {
     String? userId,
     String? title,
     String? persona,
+    String? customPersonaName,
     int? createdAt,
     int? updatedAt,
     int? lastMessageAt,
@@ -92,6 +97,7 @@ class ThreadModel {
       userId: userId ?? this.userId,
       title: title ?? this.title,
       persona: persona ?? this.persona,
+      customPersonaName: customPersonaName ?? this.customPersonaName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
@@ -109,6 +115,7 @@ class ThreadModel {
     required String userId,
     String title = 'New Chat',
     String? persona,
+    String? customPersonaName,
   }) {
     final now = DateTime.now().millisecondsSinceEpoch;
     return ThreadModel(
@@ -116,6 +123,7 @@ class ThreadModel {
       userId: userId,
       title: title,
       persona: persona,
+      customPersonaName: customPersonaName,
       createdAt: now,
       updatedAt: now,
       lastMessageAt: now,

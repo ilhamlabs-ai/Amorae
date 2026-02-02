@@ -138,6 +138,7 @@ class ChatService:
             preferences=preferences,
             facts=facts,
             summary=summary,
+            custom_persona_name=thread_data.get("customPersonaName"),
         )
         
         # Create assistant message
@@ -319,9 +320,11 @@ class ChatService:
             async for chunk in self.llm.generate_stream(
                 messages=messages,
                 user_name=user_name,
+                user_gender=user_gender,
                 preferences=preferences,
                 facts=facts,
                 summary=summary,
+                custom_persona_name=thread_data.get("customPersonaName"),
             ):
                 full_response += chunk
                 cursor += len(chunk)

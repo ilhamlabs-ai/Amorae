@@ -122,16 +122,39 @@ class ThreadListScreen extends ConsumerWidget {
       return _buildEmptyState(context, ref);
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: threads.length,
-      itemBuilder: (context, index) {
-        final thread = threads[index];
-        return _buildThreadCard(context, ref, thread, index)
-            .animate()
-            .fadeIn(delay: Duration(milliseconds: 100 * index))
-            .slideX(begin: 0.1, end: 0);
-      },
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    final isSingleMode = user?.companionMode == 'single';
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: threads.length,
+            itemBuilder: (context, index) {
+              final thread = threads[index];
+              return _buildThreadCard(context, ref, thread, index)
+                  .animate()
+                  .fadeIn(delay: Duration(milliseconds: 100 * index))
+                  .slideX(begin: 0.1, end: 0);
+            },
+          ),
+        ),
+        // Show FAB only in multiple mode or if single mode has no threads
+        if (!isSingleMode || threads.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: FloatingActionButton.extended(
+              onPressed: () => _createNewThread(context, ref),
+              backgroundColor: AppColors.primary,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: Text(
+                'New Chat',
+                style: AppTextStyles.button.copyWith(color: Colors.white),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -203,6 +226,17 @@ class ThreadListScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    final isSingleMode = user?.companionMode == 'single';
+
+    // If single companion mode and no threads, redirect to selection
+    if (isSingleMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.push('/companion-selection');
+      });
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -352,14 +386,17 @@ class ThreadListScreen extends ConsumerWidget {
     
     // Determine which persona to use based on companion mode
     String? selectedPersona;
-    final companionMode = user?.prefs.companionMode ?? 'multiple';
+    final companionMode = user?.companionMode ?? 'multiple';
     
     if (companionMode == 'single') {
-      // Single mode: Use their selected persona
-      selectedPersona = user?.prefs.selectedPersona ?? 'amora';
+      // Single mode: Navigate to companion selection if they don't have one yet
+      if (context.mounted) {
+        context.push('/companion-selection');
+      }
+      return;
     } else {
       // Multiple mode: Let them choose
-      selectedPersona = await _showPersonaSelectorDialog(context, user?.prefs.selectedPersona ?? 'amora');
+      selectedPersona = await _showPersonaSelectorDialog(context, user?.prefs.selectedPersona ?? 'girlfriend');
       if (selectedPersona == null) return; // User cancelled
     }
     
@@ -368,15 +405,12 @@ class ThreadListScreen extends ConsumerWidget {
     if (selectedPersona == 'girlfriend' || selectedPersona == 'boyfriend' || selectedPersona == 'friend') {
       customName = await _showCustomNameDialog(context, selectedPersona);
       if (customName == null) return; // User cancelled
-      
-      // Don't save to prefs - the name is already returned and will be used for the title
-      // The thread title will use this custom name
     }
     
     final thread = await firestoreService.createThread(
       userId: userId,
       persona: selectedPersona,
-      title: customName != null ? 'Chat with $customName' : null,
+      customPersonaName: customName,
     );
     
     ref.read(selectedThreadIdProvider.notifier).state = thread.id;
