@@ -7,6 +7,7 @@ class MessageAttachment(BaseModel):
     """Attachment in a message (image)."""
     kind: Literal["image"] = "image"
     storage_path: str = Field(..., alias="storagePath")
+    download_url: str = Field(..., alias="downloadUrl")
     mime_type: str = Field(..., alias="mimeType")
     width: Optional[int] = None
     height: Optional[int] = None
