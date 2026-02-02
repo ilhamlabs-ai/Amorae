@@ -22,8 +22,8 @@ final storageServiceProvider = Provider<StorageService>((ref) {
 
 /// API client provider
 final apiClientProvider = Provider<ApiClient>((ref) {
-  // Production backend on AWS Lightsail (through Nginx reverse proxy)
-  const String productionUrl = 'http://3.127.210.200';  // Port 80 (default HTTP)
+  // Production backend on AWS Lightsail with HTTPS and custom domain
+  const String productionUrl = 'https://amorae.duckdns.org';
   
   // Local development backend
   const String localUrl = 'http://192.168.0.147:8000';
