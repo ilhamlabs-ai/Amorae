@@ -27,7 +27,7 @@ Save: `Ctrl+X` → `Y` → `Enter`
 #### Option A: From your Windows machine (PowerShell)
 ```powershell
 # Replace with actual path to your firebase-adminsdk.json
-scp "C:\path\to\firebase-adminsdk.json" ubuntu@63.177.232.248:~/Amorae/backend/
+scp "C:\path\to\firebase-adminsdk.json" ubuntu@3.127.210.200:~/Amorae/backend/
 ```
 
 #### Option B: Create file on server
@@ -63,7 +63,7 @@ Add firewall rule:
 curl http://localhost:8000/health
 
 # From your machine (after firewall configured)
-curl http://63.177.232.248:8000/health
+curl http://3.127.210.200:8000/health
 ```
 
 ---
@@ -130,13 +130,13 @@ sudo supervisorctl status amorae-backend
 
 Test API endpoints:
 ```bash
-curl http://63.177.232.248:8000/
-curl http://63.177.232.248:8000/health
+curl http://3.127.210.200:8000/
+curl http://3.127.210.200:8000/health
 ```
 
 Open in browser:
-- API Docs: http://63.177.232.248:8000/docs
-- Health: http://63.177.232.248:8000/health
+- API Docs: http://3.127.210.200:8000/docs
+- Health: http://3.127.210.200:8000/health
 
 ---
 

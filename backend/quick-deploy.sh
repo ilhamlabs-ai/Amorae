@@ -124,8 +124,8 @@ echo -e "${GREEN}🎉 Deployment Complete!${NC}"
 echo -e "${GREEN}=====================================${NC}"
 echo ""
 echo "Backend is running at:"
-echo "  🌐 http://63.177.232.248:8000"
-echo "  📚 API Docs: http://63.177.232.248:8000/docs"
+echo "  🌐 http://3.127.210.200:8000"
+echo "  📚 API Docs: http://3.127.210.200:8000/docs"
 echo ""
 echo "Useful commands:"
 echo "  📊 Check status: sudo supervisorctl status amorae-backend"
@@ -139,7 +139,7 @@ echo ""
 
 # Check if port is accessible from outside
 echo -e "${YELLOW}Testing external access...${NC}"
-if curl -s --max-time 5 http://63.177.232.248:8000/health > /dev/null; then
+if curl -s --max-time 5 http://3.127.210.200:8000/health > /dev/null; then
     echo -e "${GREEN}✅ Backend is accessible from internet!${NC}"
 else
     echo -e "${YELLOW}⚠️  Backend not accessible from internet yet${NC}"

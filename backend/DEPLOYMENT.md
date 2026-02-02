@@ -59,7 +59,7 @@ Save with `Ctrl+X`, then `Y`, then `Enter`.
 
 ```bash
 # From your local machine (PowerShell/CMD)
-scp path/to/firebase-adminsdk.json ubuntu@63.177.232.248:~/Amorae/backend/
+scp path/to/firebase-adminsdk.json ubuntu@3.127.210.200:~/Amorae/backend/
 ```
 
 ### Option B: Manual upload via nano
@@ -165,7 +165,7 @@ Add:
 ```nginx
 server {
     listen 80;
-    server_name 63.177.232.248;
+    server_name 3.127.210.200;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
@@ -207,9 +207,9 @@ Update the API endpoint in your Flutter app:
 **File**: `lib/shared/services/api_client.dart`
 
 ```dart
-static const String baseUrl = 'http://63.177.232.248:8000';
+static const String baseUrl = 'http://3.127.210.200:8000';
 // Or if using nginx on port 80:
-// static const String baseUrl = 'http://63.177.232.248';
+// static const String baseUrl = 'http://3.127.210.200';
 ```
 
 ## Step 10: Verify Deployment
@@ -218,10 +218,10 @@ Test from your local machine:
 
 ```bash
 # Test health endpoint
-curl http://63.177.232.248:8000/health
+curl http://3.127.210.200:8000/health
 
 # Test API docs
-# Open in browser: http://63.177.232.248:8000/docs
+# Open in browser: http://3.127.210.200:8000/docs
 ```
 
 ## Supervisor Commands (Useful)
@@ -359,7 +359,7 @@ If you encounter issues:
 ---
 
 **Server Details:**
-- Public IPv4: 63.177.232.248
+- Public IPv4: 3.127.210.200
 - Public IPv6: 2a05:d014:d88:3b00:c12d:51c9:6a5:d470
 - Backend Path: ~/Amorae/backend
-- API Endpoint: http://63.177.232.248:8000
+- API Endpoint: http://3.127.210.200:8000

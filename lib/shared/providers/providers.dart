@@ -23,7 +23,7 @@ final storageServiceProvider = Provider<StorageService>((ref) {
 /// API client provider
 final apiClientProvider = Provider<ApiClient>((ref) {
   // Production backend on AWS Lightsail
-  const String productionUrl = 'http://63.177.232.248:8000';
+  const String productionUrl = 'http://3.127.210.200:8000';
   
   // Local development backend
   const String localUrl = 'http://192.168.0.147:8000';
