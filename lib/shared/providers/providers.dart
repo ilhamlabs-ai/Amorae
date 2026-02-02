@@ -22,9 +22,15 @@ final storageServiceProvider = Provider<StorageService>((ref) {
 
 /// API client provider
 final apiClientProvider = Provider<ApiClient>((ref) {
-  // Backend running on local network
-  // Change this IP to your computer's local IP address
-  return ApiClient(baseUrl: 'http://192.168.0.147:8000');
+  // Production backend on AWS Lightsail
+  const String productionUrl = 'http://63.177.232.248:8000';
+  
+  // Local development backend
+  const String localUrl = 'http://192.168.0.147:8000';
+  
+  // Use production URL by default
+  // Switch to localUrl for local development
+  return ApiClient(baseUrl: productionUrl);
 });
 
 // ============ AUTH PROVIDERS ============
