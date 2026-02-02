@@ -97,6 +97,9 @@ class ChatService:
         messages = []
         for doc in messages_docs:
             msg_data = doc.to_dict()
+            print(f"📨 Firestore message: role={msg_data.get('role')}, has_attachments={bool(msg_data.get('attachments'))}")
+            if msg_data.get('attachments'):
+                print(f"   Attachments: {msg_data.get('attachments')}")
             messages.append({
                 "role": msg_data.get("role", "user"),
                 "content": msg_data.get("content", ""),
@@ -109,6 +112,7 @@ class ChatService:
             "content": request.content,
             "attachments": [a.model_dump(by_alias=True) for a in (request.attachments or [])],
         }
+        print(f"📤 Current user message attachments: {user_message['attachments']}")
         messages.append(user_message)
         
         # Get next sequence number

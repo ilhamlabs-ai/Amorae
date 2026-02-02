@@ -77,15 +77,20 @@ class LLMService:
             # Handle images
             attachments = msg.get("attachments", [])
             if attachments:
+                print(f"🖼️ Processing {len(attachments)} attachments: {attachments}")
                 content_parts = []
                 if content:
                     content_parts.append({"type": "text", "text": content})
                 for att in attachments:
                     if att.get("kind") == "image" and att.get("downloadUrl"):
+                        print(f"✅ Adding image URL: {att['downloadUrl']}")
                         content_parts.append({
                             "type": "image_url",
                             "image_url": {"url": att["downloadUrl"]},
                         })
+                    else:
+                        print(f"❌ Skipping: kind={att.get('kind')}, hasUrl={bool(att.get('downloadUrl'))}")
+                print(f"📤 Content parts: {len(content_parts)} items")
                 api_messages.append({"role": role, "content": content_parts})
             else:
                 api_messages.append({"role": role, "content": content})
@@ -96,6 +101,8 @@ class LLMService:
             for m in messages
         )
         model = self.vision_model if has_images else self.model
+        
+        print(f"🤖 Using model: {model} (has_images={has_images})")
         
         # Get complete response
         response = await self.client.chat.completions.create(
@@ -132,15 +139,20 @@ class LLMService:
             # Handle images
             attachments = msg.get("attachments", [])
             if attachments:
+                print(f"🖼️ [STREAM] Processing {len(attachments)} attachments: {attachments}")
                 content_parts = []
                 if content:
                     content_parts.append({"type": "text", "text": content})
                 for att in attachments:
                     if att.get("kind") == "image" and att.get("downloadUrl"):
+                        print(f"✅ [STREAM] Adding image URL: {att['downloadUrl']}")
                         content_parts.append({
                             "type": "image_url",
                             "image_url": {"url": att["downloadUrl"]},
                         })
+                    else:
+                        print(f"❌ [STREAM] Skipping: kind={att.get('kind')}, hasUrl={bool(att.get('downloadUrl'))}")
+                print(f"📤 [STREAM] Content parts: {len(content_parts)} items")
                 api_messages.append({"role": role, "content": content_parts})
             else:
                 api_messages.append({"role": role, "content": content})
@@ -151,6 +163,8 @@ class LLMService:
             for m in messages
         )
         model = self.vision_model if has_images else self.model
+        
+        print(f"🤖 [STREAM] Using model: {model} (has_images={has_images})")
         
         # Stream response
         stream = await self.client.chat.completions.create(
