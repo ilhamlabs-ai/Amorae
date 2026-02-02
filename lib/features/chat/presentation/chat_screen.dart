@@ -32,7 +32,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final _uuid = const Uuid();
   
-  bool _isSending = false;
   bool _isTyping = false;
   String _streamingContent = '';
   String? _streamingMessageId;
@@ -43,6 +42,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // Set selected thread
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(selectedThreadIdProvider.notifier).state = widget.threadId;
+      _scrollToBottom(animate: false);
+    });
+  }
+
+  @override
+  void didUpdateWidget(ChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Auto-scroll when messages update
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
     });
   }
 
@@ -70,7 +79,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (content.isEmpty && images.isEmpty) return;
 
     setState(() {
-      _isSending = true;
       _isTyping = false;
       _streamingContent = '';
     });
@@ -137,13 +145,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       print('❌ Error in _sendMessage: $e');
       _showError(e.toString());
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSending = false;
-          _isTyping = false;
-        });
-      }
     }
   }
 
@@ -193,8 +194,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               // Composer
               MessageComposer(
                 onSend: _sendMessage,
-                isSending: _isSending,
-                isEnabled: !_isSending,
               ),
             ],
           ),

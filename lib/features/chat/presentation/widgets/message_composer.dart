@@ -9,14 +9,10 @@ import '../../../../app/theme/app_text_styles.dart';
 /// Message composer widget with image attachment support
 class MessageComposer extends ConsumerStatefulWidget {
   final Function(String content, List<File> images) onSend;
-  final bool isSending;
-  final bool isEnabled;
 
   const MessageComposer({
     super.key,
     required this.onSend,
-    this.isSending = false,
-    this.isEnabled = true,
   });
 
   @override
@@ -107,10 +103,7 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
     });
   }
 
-  bool get _canSend =>
-      widget.isEnabled &&
-      !widget.isSending &&
-      (_hasText || _selectedImages.isNotEmpty);
+  bool get _canSend => _hasText || _selectedImages.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +264,6 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
       focusNode: _focusNode,
       maxLines: 5,
       minLines: 1,
-      enabled: widget.isEnabled && !widget.isSending,
       style: AppTextStyles.bodyMedium,
       cursorColor: AppColors.accent,
       textInputAction: TextInputAction.newline,
@@ -319,20 +311,11 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                 ]
               : null,
         ),
-        child: widget.isSending
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.textOnPrimary,
-                ),
-              )
-            : Icon(
-                Icons.send_rounded,
-                color: _canSend ? AppColors.textOnPrimary : AppColors.textTertiary,
-                size: 24,
-              ),
+        child: Icon(
+          Icons.send_rounded,
+          color: _canSend ? AppColors.textOnPrimary : AppColors.textTertiary,
+          size: 24,
+        ),
       ),
     );
   }
