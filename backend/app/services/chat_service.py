@@ -107,7 +107,7 @@ class ChatService:
         user_message = {
             "role": "user",
             "content": request.content,
-            "attachments": [a.model_dump() for a in (request.attachments or [])],
+            "attachments": [a.model_dump(by_alias=True) for a in (request.attachments or [])],
         }
         messages.append(user_message)
         
@@ -121,7 +121,7 @@ class ChatService:
             "id": user_msg_id,
             "role": "user",
             "content": request.content,
-            "attachments": [a.model_dump() for a in (request.attachments or [])],
+            "attachments": [a.model_dump(by_alias=True) for a in (request.attachments or [])],
             "seq": next_seq,
             "createdAt": firestore.SERVER_TIMESTAMP,
         })
@@ -256,7 +256,7 @@ class ChatService:
             user_message = {
                 "role": "user",
                 "content": request.content,
-                "attachments": [a.model_dump() for a in (request.attachments or [])],
+                "attachments": [a.model_dump(by_alias=True) for a in (request.attachments or [])],
             }
             messages.append(user_message)
             
@@ -270,7 +270,7 @@ class ChatService:
                 "id": user_msg_id,
                 "role": "user",
                 "content": request.content,
-                "attachments": [a.model_dump() for a in (request.attachments or [])],
+                "attachments": [a.model_dump(by_alias=True) for a in (request.attachments or [])],
                 "seq": next_seq,
                 "createdAt": firestore.SERVER_TIMESTAMP,
             })
