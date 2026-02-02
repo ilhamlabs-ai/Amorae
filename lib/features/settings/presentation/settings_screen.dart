@@ -671,56 +671,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _showRelationshipPicker(UserModel user) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textTertiary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text('Relationship Mode', style: AppTextStyles.headlineSmall),
-              const SizedBox(height: 16),
-              _buildRelationshipOption(
-                title: 'Romantic Partner',
-                icon: Icons.favorite,
-                isSelected: user.prefs.relationshipMode == 'romantic',
-                onTap: () {
-                  Navigator.pop(context);
-                  _updatePreference('relationshipMode', 'romantic');
-                },
-              ),
-              _buildRelationshipOption(
-                title: 'Close Friend',
-                icon: Icons.people,
-                isSelected: user.prefs.relationshipMode == 'friendly',
-                onTap: () {
-                  Navigator.pop(context);
-                  _updatePreference('relationshipMode', 'friendly');
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _showCompanionStylePicker(UserModel user) {
     final styles = [
       {'key': 'warm_supportive', 'title': 'Warm & Supportive', 'icon': Icons.favorite},
@@ -1150,6 +1100,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _signOut() async {
+    showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(

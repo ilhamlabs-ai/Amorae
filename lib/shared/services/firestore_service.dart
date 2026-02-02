@@ -354,14 +354,18 @@ class FirestoreService {
     try {
       // Delete all threads and their messages
       print('🗑️ Deleting threads...');
-      final threadsSnapshot = await _threadsRef(userId).get();
+      final threadsSnapshot = await _threadsRef
+          .where('userId', isEqualTo: userId)
+          .get();
       
       for (final threadDoc in threadsSnapshot.docs) {
         final threadId = threadDoc.id;
         print('🗑️ Deleting thread: $threadId');
         
         // Delete all messages in thread
-        final messagesSnapshot = await _messagesRef(userId, threadId).get();
+        final messagesSnapshot = await threadDoc.reference
+            .collection('messages')
+            .get();
         for (final messageDoc in messagesSnapshot.docs) {
           await messageDoc.reference.delete();
         }
@@ -372,7 +376,11 @@ class FirestoreService {
       
       // Delete all facts
       print('🗑️ Deleting facts...');
-      final factsSnapshot = await _factsRef(userId).get();
+      final factsSnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('facts')
+          .get();
       for (final factDoc in factsSnapshot.docs) {
         await factDoc.reference.delete();
       }
