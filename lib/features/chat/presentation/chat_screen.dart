@@ -411,28 +411,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     
     final personaName = thread.persona!;
     
+    // Check for thread-specific custom name first
+    if (thread.customPersonaName != null && thread.customPersonaName!.isNotEmpty) {
+      return thread.customPersonaName!;
+    }
+    
     // Check if it's a default persona
     final persona = PersonaModel.getByName(personaName);
     if (persona != null) {
       return persona.displayName;
     }
     
-    // For custom personas, get from user preferences
-    final userAsync = ref.watch(currentUserProvider);
-    return userAsync.when(
-      data: (user) {
-        if (user == null) return personaName;
-        
-        // If it's a relationship persona and user has a custom name
-        if (['girlfriend', 'boyfriend', 'friend'].contains(personaName)) {
-          return user.prefs.customPersonaName ?? _getDefaultCustomName(personaName);
-        }
-        
-        return personaName;
-      },
-      loading: () => personaName,
-      error: (_, __) => personaName,
-    );
+    // For custom personas without thread name, use default
+    if (['girlfriend', 'boyfriend', 'friend'].contains(personaName)) {
+      return _getDefaultCustomName(personaName);
+    }
+    
+    return personaName;
   }
   
   String _getDefaultCustomName(String personaType) {

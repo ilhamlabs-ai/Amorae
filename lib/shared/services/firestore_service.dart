@@ -128,22 +128,26 @@ class FirestoreService {
   }) async {
     // Get user to determine persona and generate title
     final user = await getUser(userId);
-    final selectedPersona = persona ?? user?.prefs.selectedPersona ?? 'amora';
+    final selectedPersona = persona ?? user?.prefs.selectedPersona ?? 'girlfriend';
     
-    // Generate title based on persona
+    // Generate title - prioritize custom name for personalized feel
     String threadTitle;
     if (title != null) {
       threadTitle = title;
+    } else if (customPersonaName != null && customPersonaName.isNotEmpty) {
+      // Use custom name if provided
+      threadTitle = 'Chat with $customPersonaName';
     } else {
-      // Get persona display name
+      // Fall back to persona display name
       final personaModel = PersonaModel.getByName(selectedPersona);
       if (personaModel != null) {
         threadTitle = 'Chat with ${personaModel.displayName}';
       } else {
-        // Custom persona - use custom name or default
-        threadTitle = 'Chat with ${customPersonaName ?? selectedPersona}';
+        threadTitle = 'Chat with $selectedPersona';
       }
     }
+    
+    print('🔵 Creating thread: persona=$selectedPersona, customName=$customPersonaName, title=$threadTitle');
     
     final ref = _threadsRef.doc();
     final thread = ThreadModel.create(
@@ -155,6 +159,7 @@ class FirestoreService {
     );
 
     await ref.set(thread.toFirestore());
+    print('✅ Thread created: id=${thread.id}, customPersonaName=${thread.customPersonaName}');
     return thread;
   }
 
@@ -169,6 +174,48 @@ class FirestoreService {
   Future<void> updateThread(String threadId, Map<String, dynamic> data) async {
     data['updatedAt'] = DateTime.now().millisecondsSinceEpoch;
     await _threadsRef.doc(threadId).update(data);
+  }
+
+  /// Update thread's custom persona name
+  Future<void> updateThreadCustomName(String threadId, String customName) async {
+    await updateThread(threadId, {
+      'customPersonaName': customName,
+      'title': 'Chat with $customName',
+    });
+  }
+
+  /// Update thread's persona type and custom name
+  Future<void> updateThreadPersona(String threadId, String persona, String? customName) async {
+    await updateThread(threadId, {
+      'persona': persona,
+      'customPersonaName': customName,
+      'title': 'Chat with ${customName ?? persona}',
+    });
+  }
+
+  /// Update all threads for a user with a specific persona to use new custom name
+  Future<int> updateAllThreadsCustomName({
+    required String userId,
+    required String persona,
+    required String newCustomName,
+  }) async {
+    final query = await _threadsRef
+        .where('userId', isEqualTo: userId)
+        .where('persona', isEqualTo: persona)
+        .get();
+    
+    if (query.docs.isEmpty) return 0;
+    
+    final batch = _firestore.batch();
+    for (var doc in query.docs) {
+      batch.update(doc.reference, {
+        'customPersonaName': newCustomName,
+        'title': 'Chat with $newCustomName',
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+    await batch.commit();
+    return query.docs.length;
   }
 
   /// Delete thread and all messages

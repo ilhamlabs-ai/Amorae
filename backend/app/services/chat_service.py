@@ -61,8 +61,12 @@ class ChatService:
         # Override persona with thread's persona if it exists
         # This ensures each thread maintains its own persona
         thread_persona = thread_data.get("persona")
+        thread_custom_name = thread_data.get("customPersonaName")
+        
+        print(f"🎭 Thread persona: {thread_persona}")
+        print(f"📛 Thread customPersonaName: {thread_custom_name}")
+        
         if thread_persona:
-            print(f"🎭 Using thread persona: {thread_persona}")
             preferences.selected_persona = thread_persona
         else:
             print(f"⚠️ No persona in thread, using user default: {preferences.selected_persona}")
@@ -131,6 +135,9 @@ class ChatService:
         })
         
         # Generate complete AI response
+        custom_name = thread_data.get("customPersonaName")
+        print(f"🤖 Calling llm.generate with custom_persona_name: {custom_name}")
+        
         full_response = await self.llm.generate(
             messages=messages,
             user_name=user_name,
@@ -138,7 +145,7 @@ class ChatService:
             preferences=preferences,
             facts=facts,
             summary=summary,
-            custom_persona_name=thread_data.get("customPersonaName"),
+            custom_persona_name=custom_name,
         )
         
         # Create assistant message

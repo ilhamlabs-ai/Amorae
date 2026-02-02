@@ -48,6 +48,7 @@ dependencies:
   
   # Icons
   cupertino_icons: ^1.0.8
+  flutter_launcher_icons: ^0.14.2
 
 dev_dependencies:
   flutter_test:
@@ -65,3 +66,11 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/amorae.jpg"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icons/amorae.jpg"
+  remove_alpha_ios: true

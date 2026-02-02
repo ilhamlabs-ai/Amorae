@@ -21,9 +21,34 @@ class ThreadListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final threadsAsync = ref.watch(userThreadsProvider);
     final currentUser = ref.watch(currentUserProvider);
+    final user = currentUser.valueOrNull;
+    final isSingleMode = user?.prefs.companionMode == 'single';
+
+    // For single mode users: redirect to companion selection if no threads exist
+    // Only redirect when we have confirmed data (not loading)
+    if (isSingleMode && 
+        currentUser.hasValue && 
+        threadsAsync.hasValue && 
+        threadsAsync.value!.isEmpty) {
+      // Use Future.microtask to avoid build-time navigation issues
+      Future.microtask(() {
+        if (context.mounted) {
+          context.go('/companion-selection');
+        }
+      });
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+          child: const Center(
+            child: CircularProgressIndicator(color: AppColors.accent),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
-      drawer: const PersonaDrawer(),
+      // Only show drawer for multiple companion mode
+      drawer: isSingleMode ? null : const PersonaDrawer(),
       body: Container(
         decoration: const BoxDecoration(
           gradient: AppColors.backgroundGradient,
@@ -47,30 +72,33 @@ class ThreadListScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, WidgetRef ref, dynamic user) {
+    final isSingleMode = user?.prefs.companionMode == 'single';
+    
     return Container(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          // Menu button for persona drawer
-          Builder(
-            builder: (context) => GestureDetector(
-              onTap: () => Scaffold.of(context).openDrawer(),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.glassBorder),
-                ),
-                child: const Icon(
-                  Icons.menu,
-                  color: AppColors.textSecondary,
+          // Menu button for persona drawer (only show in multiple mode)
+          if (!isSingleMode)
+            Builder(
+              builder: (context) => GestureDetector(
+                onTap: () => Scaffold.of(context).openDrawer(),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.glassBorder),
+                  ),
+                  child: const Icon(
+                    Icons.menu,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ),
-          ),
           
-          const SizedBox(width: 16),
+          if (!isSingleMode) const SizedBox(width: 16),
           
           // User greeting
           Expanded(
@@ -123,7 +151,7 @@ class ThreadListScreen extends ConsumerWidget {
     }
 
     final user = ref.watch(currentUserProvider).valueOrNull;
-    final isSingleMode = user?.companionMode == 'single';
+    final isSingleMode = user?.prefs.companionMode == 'single';
 
     return Column(
       children: [
@@ -146,7 +174,7 @@ class ThreadListScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16.0),
             child: FloatingActionButton.extended(
               onPressed: () => _createNewThread(context, ref),
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.primaryStart,
               icon: const Icon(Icons.add, color: Colors.white),
               label: Text(
                 'New Chat',
@@ -226,17 +254,6 @@ class ThreadListScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider).valueOrNull;
-    final isSingleMode = user?.companionMode == 'single';
-
-    // If single companion mode and no threads, redirect to selection
-    if (isSingleMode) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.push('/companion-selection');
-      });
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -386,7 +403,7 @@ class ThreadListScreen extends ConsumerWidget {
     
     // Determine which persona to use based on companion mode
     String? selectedPersona;
-    final companionMode = user?.companionMode ?? 'multiple';
+    final companionMode = user?.prefs.companionMode ?? 'multiple';
     
     if (companionMode == 'single') {
       // Single mode: Navigate to companion selection if they don't have one yet

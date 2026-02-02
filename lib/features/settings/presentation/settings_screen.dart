@@ -9,6 +9,8 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/avatar_circle.dart';
 import '../../../shared/providers/providers.dart';
 import '../../../shared/models/user_model.dart';
+import '../../../shared/services/firestore_service.dart';
+import '../../../core/utils/name_validator.dart';
 
 /// Settings screen
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -224,7 +226,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildCompanionSettings(UserModel user) {
-    final isSingleMode = user.companionMode == 'single';
+    final isSingleMode = user.prefs.companionMode == 'single';
     
     return GlassCard(
       padding: EdgeInsets.zero,
@@ -590,50 +592,105 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showCustomNameDialog(UserModel user) {
-    final controller = TextEditingController(text: user.prefs.customPersonaName ?? '');
+    final currentName = user.prefs.customPersonaName ?? '';
+    final controller = TextEditingController(text: currentName);
+    String? errorText;
+    
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('Companion Name', style: AppTextStyles.headlineSmall),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            style: AppTextStyles.bodyLarge,
-            decoration: InputDecoration(
-              hintText: 'Enter name',
-              hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textTertiary),
-              filled: true,
-              fillColor: AppColors.background,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.glassBorder),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.glassBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.accent, width: 2),
-              ),
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text('Companion Name', style: AppTextStyles.headlineSmall),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This will update all your existing conversations with this companion.',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  maxLength: NameValidator.maxLength,
+                  style: AppTextStyles.bodyLarge,
+                  onChanged: (value) {
+                    final validation = NameValidator.validate(value);
+                    setDialogState(() => errorText = validation);
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter name (2-20 characters)',
+                    hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textTertiary),
+                    errorText: errorText,
+                    errorStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.glassBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.glassBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.accent, width: 2),
+                    ),
+                    counterStyle: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+                  ),
+                ),
+              ],
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final newName = controller.text.trim();
+                  final validation = NameValidator.validate(newName);
+                  if (validation != null) {
+                    setDialogState(() => errorText = validation);
+                    return;
+                  }
+                  
+                  Navigator.pop(context);
+                  
+                  final sanitizedName = NameValidator.sanitize(newName);
+                  
+                  // Update user preference
+                  await _updatePreference('customPersonaName', sanitizedName);
+                  
+                  // Also update all threads with this persona type
+                  final firestoreService = ref.read(firestoreServiceProvider);
+                  final persona = user.prefs.selectedPersona;
+                  if (persona != null) {
+                    final updatedCount = await firestoreService.updateAllThreadsCustomName(
+                      userId: user.id,
+                      persona: persona,
+                      newCustomName: sanitizedName,
+                    );
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Updated $updatedCount conversation${updatedCount == 1 ? '' : 's'} to use "$sanitizedName"'),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Text('Save', style: AppTextStyles.button.copyWith(color: AppColors.accent)),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _updatePreference('customPersonaName', controller.text.trim());
-              },
-              child: Text('Save', style: AppTextStyles.button.copyWith(color: AppColors.accent)),
-            ),
-          ],
         );
       },
     );
@@ -1219,25 +1276,78 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             Text(
               'Manage Companion',
-              style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
+              style: AppTextStyles.headlineMedium.copyWith(color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Change your companion settings',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             ListTile(
-              leading: const Icon(Icons.edit, color: AppColors.primary),
-              title: const Text('Change Companion Type'),
-              subtitle: Text('Current: ${_formatPersona(user.prefs.selectedPersona ?? '')}'),
-              onTap: () {
+              leading: const Icon(Icons.swap_horiz, color: AppColors.primaryStart),
+              title: Text(
+                'Change Companion Type',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                'Current: ${_formatPersona(user.prefs.selectedPersona ?? '')}',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textTertiary),
+              onTap: () async {
                 Navigator.pop(context);
-                context.push('/companion-selection');
+                
+                // Show confirmation that this will delete existing thread
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: AppColors.surface,
+                    title: Text('Change Companion?', style: AppTextStyles.headlineSmall),
+                    content: Text(
+                      'This will create a new companion and delete your current conversation history. Are you sure?',
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text('Continue', style: AppTextStyles.button.copyWith(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+                
+                if (confirmed == true && mounted) {
+                  // Delete all existing threads for this user in single mode
+                  final firestoreService = ref.read(firestoreServiceProvider);
+                  final threads = await ref.read(userThreadsProvider.future);
+                  for (final thread in threads) {
+                    await firestoreService.deleteThread(thread.id);
+                  }
+                  
+                  if (mounted) {
+                    context.go('/companion-selection');
+                  }
+                }
               },
             ),
-            if (user.prefs.selectedPersona == 'girlfriend' ||
-                user.prefs.selectedPersona == 'boyfriend' ||
-                user.prefs.selectedPersona == 'friend')
+            if (NameValidator.supportsCustomName(user.prefs.selectedPersona))
               ListTile(
                 leading: const Icon(Icons.badge, color: AppColors.accent),
-                title: const Text('Change Companion Name'),
-                subtitle: Text(user.prefs.customPersonaName ?? 'Not set'),
+                title: Text(
+                  'Change Companion Name',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                ),
+                subtitle: Text(
+                  user.prefs.customPersonaName ?? 'Not set',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textTertiary),
                 onTap: () {
                   Navigator.pop(context);
                   _showCustomNameDialog(user);

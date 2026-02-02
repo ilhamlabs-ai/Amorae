@@ -133,9 +133,12 @@ def get_persona_prompt(persona_name: str, custom_name: str = None, user_gender: 
     """
     persona_lower = persona_name.lower()
     
+    print(f"🎯 get_persona_prompt - persona: {persona_lower}, custom_name: {custom_name}")
+    
     # Handle custom relationship personas
     if persona_lower == "girlfriend":
         display_name = custom_name or "Luna"
+        print(f"👩 Girlfriend persona using name: {display_name}")
         return f"""You are {display_name}, the user's girlfriend.
 
 Core traits:

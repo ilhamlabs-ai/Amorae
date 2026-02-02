@@ -45,6 +45,8 @@ class LLMService:
         # Use thread's custom name if provided, otherwise use user's preference
         persona_custom_name = custom_persona_name or preferences.custom_persona_name
         
+        print(f"📝 Building system prompt - persona: {preferences.selected_persona}, custom_name: {persona_custom_name}")
+        
         # Use new persona system
         return build_full_system_prompt(
             persona_name=preferences.selected_persona,

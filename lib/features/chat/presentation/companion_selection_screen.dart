@@ -5,6 +5,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/services/firestore_service.dart';
+import '../../../shared/providers/providers.dart';
+import '../../../core/utils/name_validator.dart';
 
 class CompanionSelectionScreen extends ConsumerStatefulWidget {
   const CompanionSelectionScreen({super.key});
@@ -53,7 +55,7 @@ class _CompanionSelectionScreenState
     setState(() => _isLoading = true);
 
     try {
-      final user = ref.read(userProvider);
+      final user = ref.read(currentUserProvider).valueOrNull;
       if (user == null) return;
 
       // Show custom name dialog
@@ -66,16 +68,20 @@ class _CompanionSelectionScreenState
         return;
       }
 
+      print('🔵 Creating thread with persona: $_selectedPersona, customName: $customName');
+
       // Create the companion thread
       final firestoreService = ref.read(firestoreServiceProvider);
-      await firestoreService.createThread(
+      final thread = await firestoreService.createThread(
         userId: user.id,
-        selectedPersona: _selectedPersona!,
+        persona: _selectedPersona!,
         customPersonaName: customName,
       );
 
+      print('✅ Thread created: ${thread.id}, customPersonaName: ${thread.customPersonaName}');
+
       if (mounted) {
-        context.go('/chat');
+        context.go('/chat/${thread.id}');
       }
     } catch (e) {
       if (mounted) {
@@ -92,70 +98,84 @@ class _CompanionSelectionScreenState
 
   Future<String?> _showCustomNameDialog(String defaultName) async {
     final controller = TextEditingController(text: defaultName);
+    String? errorText;
 
     return showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text(
-          'Name Your Companion',
-          style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Give your companion a name',
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-              decoration: InputDecoration(
-                hintText: 'Enter a name',
-                hintStyle:
-                    AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-                filled: true,
-                fillColor: AppColors.background,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text(
+            'Name Your Companion',
+            style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Give your companion a name (2-20 characters)',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                maxLength: NameValidator.maxLength,
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                onChanged: (value) {
+                  final validation = NameValidator.validate(value);
+                  setDialogState(() => errorText = validation);
+                },
+                decoration: InputDecoration(
+                  hintText: 'Enter a name',
+                  hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                  errorText: errorText,
+                  errorStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  counterStyle: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final name = controller.text.trim();
+                final validation = NameValidator.validate(name);
+                if (validation != null) {
+                  setDialogState(() => errorText = validation);
+                  return;
+                }
+                Navigator.of(context).pop(NameValidator.sanitize(name));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryStart,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Continue',
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              Navigator.of(context).pop(name.isEmpty ? defaultName : name);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Continue',
-              style: AppTextStyles.body.copyWith(color: Colors.white),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -169,7 +189,7 @@ class _CompanionSelectionScreenState
         elevation: 0,
         title: Text(
           'Choose Your Companion',
-          style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
+          style: AppTextStyles.headlineMedium.copyWith(color: AppColors.textPrimary),
         ),
       ),
       body: _isLoading
@@ -182,13 +202,13 @@ class _CompanionSelectionScreenState
                   children: [
                     Text(
                       'Select the type of companion you\'d like',
-                      style: AppTextStyles.h3
+                      style: AppTextStyles.titleLarge
                           .copyWith(color: AppColors.textPrimary),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'You can only have one companion in single companion mode',
-                      style: AppTextStyles.body
+                      style: AppTextStyles.bodyMedium
                           .copyWith(color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 32),
@@ -241,13 +261,13 @@ class _CompanionSelectionScreenState
                                         children: [
                                           Text(
                                             companion['title'],
-                                            style: AppTextStyles.h3.copyWith(
+                                            style: AppTextStyles.titleLarge.copyWith(
                                                 color: AppColors.textPrimary),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             companion['subtitle'],
-                                            style: AppTextStyles.body.copyWith(
+                                            style: AppTextStyles.bodyMedium.copyWith(
                                                 color: AppColors.textSecondary),
                                           ),
                                         ],
@@ -272,7 +292,7 @@ class _CompanionSelectionScreenState
                       child: ElevatedButton(
                         onPressed: _selectedPersona != null ? _selectCompanion : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: AppColors.primaryStart,
                           disabledBackgroundColor:
                               AppColors.textSecondary.withOpacity(0.3),
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -282,7 +302,7 @@ class _CompanionSelectionScreenState
                         ),
                         child: Text(
                           'Continue',
-                          style: AppTextStyles.h3.copyWith(color: Colors.white),
+                          style: AppTextStyles.titleLarge.copyWith(color: Colors.white),
                         ),
                       ),
                     ),
