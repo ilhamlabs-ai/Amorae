@@ -10,6 +10,7 @@ import '../../../shared/widgets/avatar_circle.dart';
 import '../../../shared/widgets/loading_shimmer.dart';
 import '../../../shared/providers/providers.dart';
 import '../../../shared/models/thread_model.dart';
+import '../../../shared/models/persona_model.dart';
 import 'widgets/persona_drawer.dart';
 
 /// Thread list screen (Home)
@@ -439,7 +440,7 @@ class ThreadListScreen extends ConsumerWidget {
   }
 
   Future<String?> _showPersonaSelectorDialog(BuildContext context, String currentPersona) async {
-    final personas = PersonaModel.allPersonas;
+    final personas = PersonaModel.getDefaultPersonas();
     
     return showDialog<String>(
       context: context,
@@ -476,9 +477,21 @@ class ThreadListScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(
-                        persona.emoji,
-                        style: const TextStyle(fontSize: 32),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: AppColors.primaryGradient,
+                        ),
+                        child: Center(
+                          child: Text(
+                            persona.displayName[0],
+                            style: AppTextStyles.headlineSmall.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -493,7 +506,7 @@ class ThreadListScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              persona.traits.take(2).join(', '),
+                              persona.description,
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: AppColors.textSecondary,
                               ),
