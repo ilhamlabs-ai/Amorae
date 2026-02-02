@@ -114,7 +114,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         attachments: attachments.map((a) => {
           'kind': a.kind,
           'storagePath': a.storagePath,
+          'downloadUrl': a.downloadUrl,
           'mimeType': a.mimeType,
+          'sizeBytes': a.sizeBytes,
         }).toList(),
       );
 
