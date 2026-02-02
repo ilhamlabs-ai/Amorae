@@ -348,7 +348,19 @@ class ThreadListScreen extends ConsumerWidget {
 
     final firestoreService = ref.read(firestoreServiceProvider);
     final user = await firestoreService.getUser(userId);
-    final selectedPersona = user?.prefs.selectedPersona ?? 'amora';
+    
+    // Determine which persona to use based on companion mode
+    String? selectedPersona;
+    final companionMode = user?.prefs.companionMode ?? 'multiple';
+    
+    if (companionMode == 'single') {
+      // Single mode: Use their selected persona
+      selectedPersona = user?.prefs.selectedPersona ?? 'amora';
+    } else {
+      // Multiple mode: Let them choose
+      selectedPersona = await _showPersonaSelectorDialog(context, user?.prefs.selectedPersona ?? 'amora');
+      if (selectedPersona == null) return; // User cancelled
+    }
     
     // If girlfriend/boyfriend/friend, ask for custom name
     String? customName;
@@ -362,7 +374,10 @@ class ThreadListScreen extends ConsumerWidget {
       });
     }
     
-    final thread = await firestoreService.createThread(userId: userId);
+    final thread = await firestoreService.createThread(
+      userId: userId,
+      persona: selectedPersona,
+    );
     
     ref.read(selectedThreadIdProvider.notifier).state = thread.id;
     if (context.mounted) {
@@ -417,6 +432,90 @@ class ThreadListScreen extends ConsumerWidget {
               Navigator.pop(context, name.isEmpty ? defaultName : name);
             },
             child: Text('Continue', style: AppTextStyles.button.copyWith(color: AppColors.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _showPersonaSelectorDialog(BuildContext context, String currentPersona) async {
+    final personas = PersonaModel.allPersonas;
+    
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Choose Your Companion',
+          style: AppTextStyles.titleLarge,
+          textAlign: TextAlign.center,
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: personas.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final persona = personas[index];
+              final isSelected = persona.name == currentPersona;
+              
+              return InkWell(
+                onTap: () => Navigator.pop(context, persona.name),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.accent.withOpacity(0.1) : AppColors.background,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? AppColors.accent : AppColors.glassBorder,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        persona.emoji,
+                        style: const TextStyle(fontSize: 32),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              persona.displayName,
+                              style: AppTextStyles.titleMedium.copyWith(
+                                color: isSelected ? AppColors.accent : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              persona.traits.take(2).join(', '),
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isSelected)
+                        Icon(Icons.check_circle, color: AppColors.accent, size: 24),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
           ),
         ],
       ),
