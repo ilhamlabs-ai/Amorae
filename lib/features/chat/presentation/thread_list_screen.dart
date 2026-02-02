@@ -367,17 +367,16 @@ class ThreadListScreen extends ConsumerWidget {
     String? customName;
     if (selectedPersona == 'girlfriend' || selectedPersona == 'boyfriend' || selectedPersona == 'friend') {
       customName = await _showCustomNameDialog(context, selectedPersona);
-      if (customName == null || customName.isEmpty) return; // User cancelled
+      if (customName == null) return; // User cancelled
       
-      // Save custom name to user prefs
-      await firestoreService.updateUser(userId, {
-        'prefs': user?.prefs.copyWith(customPersonaName: customName).toMap() ?? {'customPersonaName': customName},
-      });
+      // Don't save to prefs - the name is already returned and will be used for the title
+      // The thread title will use this custom name
     }
     
     final thread = await firestoreService.createThread(
       userId: userId,
       persona: selectedPersona,
+      title: customName != null ? 'Chat with $customName' : null,
     );
     
     ref.read(selectedThreadIdProvider.notifier).state = thread.id;
@@ -387,8 +386,8 @@ class ThreadListScreen extends ConsumerWidget {
   }
 
   Future<String?> _showCustomNameDialog(BuildContext context, String persona) async {
-    final controller = TextEditingController();
     String defaultName = persona == 'girlfriend' ? 'Luna' : (persona == 'boyfriend' ? 'Jack' : 'Alex');
+    final controller = TextEditingController(text: defaultName);
     
     return showDialog<String>(
       context: context,
@@ -404,7 +403,7 @@ class ThreadListScreen extends ConsumerWidget {
           autofocus: true,
           style: AppTextStyles.bodyLarge,
           decoration: InputDecoration(
-            hintText: defaultName,
+            hintText: 'Enter a name',
             hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textTertiary),
             filled: true,
             fillColor: AppColors.background,
