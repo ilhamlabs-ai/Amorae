@@ -213,6 +213,7 @@ class SafetySettings {
 
 /// User preferences for AI interaction
 class UserPreferences {
+  final String companionMode; // single | multiple
   final String selectedPersona; // amora (default), einstein, gandhi, etc.
   final String? customPersonaName; // For girlfriend/boyfriend/friend personas
   final String relationshipMode; // romantic | friendly
@@ -225,6 +226,7 @@ class UserPreferences {
   final List<String> phrasesToAvoid;
 
   UserPreferences({
+    this.companionMode = 'multiple',
     this.selectedPersona = 'amora',
     this.customPersonaName,
     this.relationshipMode = 'friendly',
@@ -239,6 +241,7 @@ class UserPreferences {
 
   factory UserPreferences.fromMap(Map<String, dynamic> map) {
     return UserPreferences(
+      companionMode: map['companionMode'] ?? 'multiple',
       selectedPersona: map['selectedPersona'] ?? 'amora',
       customPersonaName: map['customPersonaName'],
       relationshipMode: map['relationshipMode'] ?? 'friendly',
@@ -254,6 +257,7 @@ class UserPreferences {
 
   Map<String, dynamic> toMap() {
     return {
+      'companionMode': companionMode,
       'selectedPersona': selectedPersona,
       'customPersonaName': customPersonaName,
       'relationshipMode': relationshipMode,
@@ -272,6 +276,7 @@ class UserPreferences {
   }
 
   UserPreferences copyWith({
+    String? companionMode,
     String? selectedPersona,
     String? customPersonaName,
     String? relationshipMode,
@@ -284,6 +289,7 @@ class UserPreferences {
     List<String>? phrasesToAvoid,
   }) {
     return UserPreferences(
+      companionMode: companionMode ?? this.companionMode,
       selectedPersona: selectedPersona ?? this.selectedPersona,
       customPersonaName: customPersonaName ?? this.customPersonaName,
       relationshipMode: relationshipMode ?? this.relationshipMode,

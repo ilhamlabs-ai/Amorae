@@ -26,6 +26,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // Onboarding data
   bool _ageConfirmed = false;
   bool _aiDisclosureAccepted = false;
+  String? _gender; // male, female, other, prefer-not-to-say
+  String _companionMode = 'multiple'; // single or multiple
   String _relationshipMode = 'friendly';
   String _companionStyle = 'warm_supportive';
   String _comfortApproach = 'balanced';
@@ -51,7 +53,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage < 3) {
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -75,8 +77,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case 0:
         return _ageConfirmed && _aiDisclosureAccepted;
       case 1:
+        return _gender != null;
       case 2:
       case 3:
+      case 4:
         return true;
       default:
         return true;
@@ -95,6 +99,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // Update user with onboarding data
       await firestoreService.updateUser(userId, {
         'displayName': _preferredName.isNotEmpty ? _preferredName : null,
+        'gender': _gender,
         'onboarding': OnboardingState(
           completed: true,
           version: 1,
@@ -107,6 +112,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           selfHarmEscalationEnabled: true,
         ).toMap(),
         'prefs': UserPreferences(
+          companionMode: _companionMode,
           relationshipMode: _relationshipMode,
           companionStyle: _companionStyle,
           comfortApproach: _comfortApproach,
@@ -161,8 +167,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   },
                   children: [
                     _buildDisclosurePage(),
+                    _buildGenderPage(),
+                    _buildCompanionModePage(),
                     _buildRelationshipPage(),
-                    _buildPersonalityPage(),
                     _buildNamePage(),
                   ],
                 ),
@@ -184,7 +191,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(4, (index) {
+            children: List.generate(5, (index) {
               return Container(
                 width: index == _currentPage ? 32 : 12,
                 height: 4,
@@ -325,6 +332,124 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ],
             ),
           ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenderPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          
+          Text(
+            'Tell us about yourself',
+            style: AppTextStyles.displaySmall,
+          ).animate().fadeIn(duration: 400.ms),
+          
+          const SizedBox(height: 8),
+          
+          Text(
+            'This helps us personalize your experience',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
+          
+          const SizedBox(height: 32),
+          
+          _buildOptionCard(
+            title: 'Male',
+            description: 'I identify as male',
+            icon: Icons.male,
+            iconColor: AppColors.info,
+            isSelected: _gender == 'male',
+            onTap: () => setState(() => _gender = 'male'),
+          ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
+          
+          const SizedBox(height: 12),
+          
+          _buildOptionCard(
+            title: 'Female',
+            description: 'I identify as female',
+            icon: Icons.female,
+            iconColor: AppColors.accent,
+            isSelected: _gender == 'female',
+            onTap: () => setState(() => _gender = 'female'),
+          ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
+          
+          const SizedBox(height: 12),
+          
+          _buildOptionCard(
+            title: 'Non-binary',
+            description: 'I identify as non-binary or other',
+            icon: Icons.wc,
+            iconColor: AppColors.success,
+            isSelected: _gender == 'other',
+            onTap: () => setState(() => _gender = 'other'),
+          ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+          
+          const SizedBox(height: 12),
+          
+          _buildOptionCard(
+            title: 'Prefer not to say',
+            description: 'I\'d rather not specify',
+            icon: Icons.remove_circle_outline,
+            iconColor: AppColors.textTertiary,
+            isSelected: _gender == 'prefer-not-to-say',
+            onTap: () => setState(() => _gender = 'prefer-not-to-say'),
+          ).animate().fadeIn(delay: 350.ms, duration: 400.ms),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompanionModePage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          
+          Text(
+            'Choose your companion',
+            style: AppTextStyles.displaySmall,
+          ).animate().fadeIn(duration: 400.ms),
+          
+          const SizedBox(height: 8),
+          
+          Text(
+            'Who would you like to talk to?',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
+          
+          const SizedBox(height: 32),
+          
+          _buildOptionCard(
+            title: 'Single Companion',
+            description: 'One dedicated AI companion (girlfriend, boyfriend, or friend)',
+            icon: Icons.person,
+            iconColor: AppColors.accent,
+            isSelected: _companionMode == 'single',
+            onTap: () => setState(() => _companionMode = 'single'),
+          ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
+          
+          const SizedBox(height: 12),
+          
+          _buildOptionCard(
+            title: 'Multiple Companions',
+            description: 'Access to all 10 AI companions with different personalities',
+            icon: Icons.groups,
+            iconColor: AppColors.info,
+            isSelected: _companionMode == 'multiple',
+            onTap: () => setState(() => _companionMode = 'multiple'),
+          ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
         ],
       ),
     );
