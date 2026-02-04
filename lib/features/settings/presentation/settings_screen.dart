@@ -111,24 +111,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           
           const SizedBox(height: 24),
           
-          // Companion settings
-          _buildSectionTitle('Companion Settings'),
-          const SizedBox(height: 12),
-          _buildCompanionSettings(user)
-              .animate()
-              .fadeIn(delay: 100.ms, duration: 400.ms),
-          
-          const SizedBox(height: 24),
-          
-          // Preferences
-          _buildSectionTitle('Preferences'),
-          const SizedBox(height: 12),
-          _buildPreferencesSection(user)
-              .animate()
-              .fadeIn(delay: 200.ms, duration: 400.ms),
-          
-          const SizedBox(height: 24),
-          
           // Account
           _buildSectionTitle('Account'),
           const SizedBox(height: 12),
@@ -218,66 +200,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: _formatGender(user.gender),
             onTap: () => _showGenderPicker(user),
           ),
+          const Divider(color: AppColors.glassBorder, height: 1),
+          _buildSettingsTile(
+            icon: Icons.cake_outlined,
+            title: 'Age',
+            subtitle: user.age != null ? '${user.age}' : 'Not set',
+            onTap: () => _showAgeEditDialog(user),
+          ),
+          const Divider(color: AppColors.glassBorder, height: 1),
+          _buildSettingsTile(
+            icon: Icons.notes_outlined,
+            title: 'Bio',
+            subtitle: _formatBio(user.bio),
+            onTap: () => _showBioEditDialog(user),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildCompanionSettings(UserModel user) {
-    return GlassCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          _buildSettingsTile(
-            icon: Icons.favorite_outline,
-            title: 'Relationship Mode',
-            subtitle: user.prefs.relationshipMode == 'romantic'
-                ? 'Romantic Partner'
-                : 'Close Friend',
-            onTap: () => _showRelationshipPicker(user),
-          ),
-          const Divider(color: AppColors.glassBorder, height: 1),
-          _buildSettingsTile(
-            icon: Icons.psychology_outlined,
-            title: 'Companion Style',
-            subtitle: _formatStyle(user.prefs.companionStyle),
-            onTap: () => _showCompanionStylePicker(user),
-          ),
-          const Divider(color: AppColors.glassBorder, height: 1),
-          _buildSettingsTile(
-            icon: Icons.emoji_emotions_outlined,
-            title: 'Emoji Level',
-            subtitle: user.prefs.emojiLevel.capitalize(),
-            onTap: () => _showEmojiLevelPicker(user),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildPreferencesSection(UserModel user) {
-    return GlassCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          _buildSwitchTile(
-            icon: Icons.pets_outlined,
-            title: 'Allow Pet Names',
-            subtitle: 'Let your companion use affectionate names',
-            value: user.prefs.petNamesAllowed,
-            onChanged: (value) => _updatePreference('petNamesAllowed', value),
-          ),
-          const Divider(color: AppColors.glassBorder, height: 1),
-          _buildSwitchTile(
-            icon: Icons.favorite_border,
-            title: 'Allow Flirting',
-            subtitle: 'Enable playful romantic interactions',
-            value: user.prefs.flirtingAllowed,
-            onChanged: (value) => _updatePreference('flirtingAllowed', value),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildAccountSection() {
@@ -388,53 +335,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showRelationshipPicker(UserModel user) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textTertiary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text('Relationship Mode', style: AppTextStyles.headlineSmall),
-              const SizedBox(height: 16),
-              _buildRelationshipOption(
-                title: 'Romantic Partner',
-                icon: Icons.favorite,
-                isSelected: user.prefs.relationshipMode == 'romantic',
-                onTap: () {
-                  Navigator.pop(context);
-                  _updatePreference('relationshipMode', 'romantic');
-                },
-              ),
-              _buildRelationshipOption(
-                title: 'Close Friend',
-                icon: Icons.people,
-                isSelected: user.prefs.relationshipMode == 'friendly',
-                onTap: () {
-                  Navigator.pop(context);
-                  _updatePreference('relationshipMode', 'friendly');
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
+    // Removed relationship picker (no longer used).
   }
 
   void _showGenderPicker(UserModel user) {
@@ -505,6 +406,207 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showAgeEditDialog(UserModel user) {
+    final controller = TextEditingController(
+      text: user.age != null ? '${user.age}' : '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text('Edit Age', style: AppTextStyles.headlineSmall),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'Enter your age',
+              filled: true,
+              fillColor: AppColors.background,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.glassBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.glassBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.accent, width: 2),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.button.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                final age = int.tryParse(controller.text.trim());
+                if (age == null || age < 18 || age > 120) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a valid age (18+)'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                Navigator.pop(context);
+                final userId = ref.read(currentUserIdProvider);
+                if (userId != null) {
+                  setState(() => _isLoading = true);
+                  try {
+                    final firestoreService = ref.read(firestoreServiceProvider);
+                    await firestoreService.updateUser(userId, {
+                      'age': age,
+                    });
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Age updated'),
+                          duration: Duration(seconds: 1),
+                          backgroundColor: AppColors.accent,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to update: $e'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isLoading = false);
+                    }
+                  }
+                }
+              },
+              child: Text(
+                'Save',
+                style: AppTextStyles.button.copyWith(
+                  color: AppColors.accent,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBioEditDialog(UserModel user) {
+    final controller = TextEditingController(text: user.bio ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text('Edit Bio', style: AppTextStyles.headlineSmall),
+          content: TextField(
+            controller: controller,
+            maxLines: 6,
+            minLines: 3,
+            decoration: InputDecoration(
+              hintText: 'Share what you like or want your companion to know',
+              filled: true,
+              fillColor: AppColors.background,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.glassBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.glassBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.accent, width: 2),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.button.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                final bio = controller.text.trim();
+                Navigator.pop(context);
+                final userId = ref.read(currentUserIdProvider);
+                if (userId != null) {
+                  setState(() => _isLoading = true);
+                  try {
+                    final firestoreService = ref.read(firestoreServiceProvider);
+                    await firestoreService.updateUser(userId, {
+                      'bio': bio.isNotEmpty ? bio : null,
+                    });
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Bio updated'),
+                          duration: Duration(seconds: 1),
+                          backgroundColor: AppColors.accent,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to update: $e'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isLoading = false);
+                    }
+                  }
+                }
+              },
+              child: Text(
+                'Save',
+                style: AppTextStyles.button.copyWith(
+                  color: AppColors.accent,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildGenderOption({
     required String title,
     required IconData icon,
@@ -552,51 +654,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showCompanionStylePicker(UserModel user) {
-    final styles = [
-      {'key': 'warm_supportive', 'title': 'Warm & Supportive', 'icon': Icons.favorite},
-      {'key': 'playful', 'title': 'Playful', 'icon': Icons.mood},
-      {'key': 'calm', 'title': 'Calm', 'icon': Icons.spa},
-      {'key': 'direct', 'title': 'Direct', 'icon': Icons.arrow_forward},
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textTertiary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text('Companion Style', style: AppTextStyles.headlineSmall),
-              const SizedBox(height: 16),
-              ...styles.map((style) => _buildRelationshipOption(
-                title: style['title'] as String,
-                icon: style['icon'] as IconData,
-                isSelected: user.prefs.companionStyle == style['key'],
-                onTap: () {
-                  Navigator.pop(context);
-                  _updatePreference('companionStyle', style['key']);
-                },
-              )),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
+    // Removed companion style picker (no longer used).
   }
 
   void _showEmojiLevelPicker(UserModel user) {
@@ -876,8 +934,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 12),
               _buildDeleteItem('All conversations and messages'),
-              _buildDeleteItem('All companion settings'),
-              _buildDeleteItem('All personal preferences'),
+              _buildDeleteItem('All custom companions'),
+              _buildDeleteItem('All personal info'),
               _buildDeleteItem('Your account and profile'),
               const SizedBox(height: 12),
               Text(
@@ -1027,21 +1085,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  String _formatStyle(String style) {
-    switch (style) {
-      case 'warm_supportive':
-        return 'Warm & Supportive';
-      case 'playful':
-        return 'Playful';
-      case 'calm':
-        return 'Calm';
-      case 'direct':
-        return 'Direct';
-      default:
-        return style;
-    }
-  }
-
   String _formatGender(String? gender) {
     switch (gender) {
       case 'male':
@@ -1057,23 +1100,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  String _formatPersona(String persona) {
-    switch (persona) {
-      case 'girlfriend':
-        return 'Girlfriend';
-      case 'boyfriend':
-        return 'Boyfriend';
-      case 'friend':
-        return 'Friend';
-      default:
-        return persona.capitalize();
-    }
-  }
-}
-
-extension StringExtension on String {
-  String capitalize() {
-    if (isEmpty) return this;
-    return '${this[0].toUpperCase()}${substring(1)}';
+  String _formatBio(String? bio) {
+    if (bio == null || bio.trim().isEmpty) return 'Not set';
+    final trimmed = bio.trim();
+    if (trimmed.length <= 48) return trimmed;
+    return '${trimmed.substring(0, 45)}...';
   }
 }

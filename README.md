@@ -5,32 +5,26 @@ A personalized AI companion application built with Flutter and FastAPI, featurin
 ## ✨ Features
 
 ### 🤖 AI Companion
-- **Multiple Personas**: 13+ unique AI personalities including Luna (Girlfriend), Albert Einstein (Genius Scientist), Jack Dawson (Artist), and more
+- **Multiple Personas**: 10 unique AI personalities (Einstein, Gandhi, Tesla, da Vinci, Socrates, Marcus Aurelius, Cleopatra, Sherlock, Athena, Amora) plus user-created companions
 - **Personalized Conversations**: Powered by OpenAI's GPT-4o-mini with context-aware responses
 - **Emotional Intelligence**: Each persona has unique traits, speaking styles, and emotional responses
 - **Memory System**: Long-term conversation memory with fact extraction and recall
 - **Thread-Specific Personas**: Each chat maintains its own persona for consistent conversations
 
 ### 💬 Chat Experience
-- **Persona Selection**: Choose from 13+ AI companions with unique personalities
+- **Persona Selection**: Choose from the 10 default AI companions or your custom companions
 - **Real-time Messaging**: Smooth, responsive chat interface with typing indicators
 - **Thread Management**: Organize conversations with different personas in separate threads
 - **Message History**: Persistent message storage with Firebase Firestore
 - **Smart Navigation**: Seamless navigation with Android back gesture support
 
-### ⚙️ Customization
-- **AI Personas**: 13+ unique personalities including:
-  - 💕 Luna - Your caring girlfriend companion
-  - 🧪 Albert Einstein - Genius scientist and philosopher
-  - 🎨 Jack Dawson - Free-spirited artist
-  - 🐉 Khaleesi - Dragon queen leader
-  - 🎯 Many more specialized personas
-- **Companion Styles**: Warm & Supportive, Playful, Calm, or Direct
-- **Preferences**: Pet names, flirting, and interaction style controls
-- **Profile Management**: Edit display name and companion settings
+### Customization
+- **Custom Companions**: Create companions with name, gender, relationship, and optional bio
+- **Profile Management**: Edit your name, age, gender, and bio
 - **Plan Tiers**: Free and Pro subscription options
 
-### 🔐 Security & Privacy
+### Security & Privacy
+ 🔐 Security & Privacy
 - **Google Sign-In**: Secure OAuth 2.0 authentication
 - **Firebase Auth**: Industry-standard user management
 - **Data Encryption**: Secure data transmission and storage
@@ -73,7 +67,7 @@ backend/
 │       ├── chat_service.py      # Chat logic with persona support
 │       ├── llm_service.py       # OpenAI integration
 │       ├── memory_service.py    # Memory management
-│       └── persona_prompts.py   # 13+ AI persona definitions
+│       └── persona_prompts.py   # 10 AI persona definitions
 └── pyproject.toml         # Dependencies
 ```
 
@@ -166,27 +160,25 @@ backend/
 
 ## 🎭 AI Personas
 
-Amorae features 13+ unique AI personalities, each with distinct traits, speaking styles, and emotional characteristics:
+Amorae features 10 unique AI personalities, each with distinct traits, speaking styles, and emotional characteristics:
 
 ### Available Personas
 
 | Persona | Type | Description |
 |---------|------|-------------|
-| 💕 **Luna** | Girlfriend | Caring, supportive, emotionally intelligent |
-| 🧪 **Albert Einstein** | Genius Scientist | Philosophical, curious, intellectually deep |
-| 🎨 **Jack Dawson** | Free-Spirited Artist | Adventurous, romantic, creative |
-| 🐉 **Khaleesi** | Dragon Queen | Strong, determined, regal leader |
-| 🧠 **Sherlock** | Master Detective | Analytical, observant, logical |
-| 🪄 **Gandalf** | Wise Wizard | Patient, wise, mystical guidance |
-| 😂 **Chandler** | Sarcastic Friend | Humorous, loyal, witty |
-| 🏀 **Michael Jordan** | Champion | Competitive, motivational, disciplined |
-| 🌟 **Tony Stark** | Genius Billionaire | Confident, innovative, charismatic |
-| 🎵 **Freddie Mercury** | Rock Legend | Flamboyant, passionate, inspiring |
-| 🌊 **Moana** | Wayfinder | Brave, adventurous, connected to nature |
-| 🦁 **Simba** | Lion King | Noble, courageous, responsible leader |
-| 🧘 **Buddha** | Enlightened Master | Peaceful, compassionate, philosophical |
+| ?? **Albert Einstein** | Genius Scientist | Curious, analytical, playful intellect |
+| ?? **Mahatma Gandhi** | Peaceful Philosopher | Calm, moral, reflective |
+| ? **Nikola Tesla** | Visionary Inventor | Futuristic, intense, innovative |
+| ?? **Leonardo da Vinci** | Renaissance Thinker | Creative, philosophical, multidisciplinary |
+| ? **Socrates** | Socratic Mentor | Question-driven, reflective, probing |
+| ??? **Marcus Aurelius** | Stoic Guide | Grounded, stabilizing, practical wisdom |
+| ?? **Cleopatra** | Charismatic Leader | Confident, perceptive, strategic |
+| ??? **Sherlock** | Master Detective | Sharp, observant, logical |
+| ?? **Athena** | Wise Strategist | Supportive, wise, clear counsel |
+| ?? **Amora** | Warm Companion | Empathetic, emotionally intelligent |
 
 Each persona maintains:
+
 - **Unique Voice**: Distinct speaking patterns and vocabulary
 - **Consistent Personality**: Maintains character traits across conversations
 - **Thread Persistence**: Each chat thread remembers its persona
@@ -203,31 +195,47 @@ Each persona maintains:
   "email": "string",
   "displayName": "string",
   "photoUrl": "string",
+  "age": 28,
+  "bio": "string",
+  "gender": "string",
   "plan": {
     "tier": "free|pro",
     "messageLimit": 100,
     "messagesUsed": 0
   },
   "prefs": {
-    "selectedPersona": "luna",
-    "relationshipMode": "romantic|friendly",
-    "companionStyle": "warm_supportive|playful|calm|direct",
+    "selectedPersona": "amora",
     "emojiLevel": "none|minimal|moderate|expressive",
-    "petNamesAllowed": true,
-    "flirtingAllowed": true
+    "topicsToAvoid": [],
+    "phrasesToAvoid": []
   },
   "createdAt": "timestamp",
   "lastActive": "timestamp"
 }
 ```
 
+
+
+**Companions Collection** (`users/{userId}/companions`):
+```json
+{
+  "id": "string",
+  "name": "string",
+  "gender": "string",
+  "relationship": "string",
+  "bio": "string",
+  "createdAt": "timestamp",
+  "updatedAt": "timestamp"
+}
+```
 **Threads Collection** (`threads/{threadId}`):
 ```json
 {
   "id": "string",
   "userId": "string",
   "title": "string",
-  "persona": "luna|einstein|jack|khaleesi|...",
+  "persona": "amora|einstein|gandhi|tesla|davinci|socrates|aurelius|cleopatra|sherlock|athena|custom",
+  "customCompanion": { "id": "string", "name": "string", "gender": "string", "relationship": "string", "bio": "string" },
   "lastMessage": "string",
   "lastMessageAt": "timestamp",
   "createdAt": "timestamp",
@@ -324,7 +332,7 @@ Create composite index for messages:
 ## 📋 Recent Updates
 
 ### Version 1.1 (February 2026)
-- ✅ **13+ AI Personas**: Multiple unique personalities to chat with
+- ✅ **10 AI Personas**: Multiple unique personalities to chat with
 - ✅ **Thread-Specific Personas**: Each chat maintains its own persona
 - ✅ **Smart Persona Drawer**: Select persona to open/create chat automatically
 - ✅ **Fixed Navigation**: Proper Android back gesture handling (Chat/Settings → Home → App Close)

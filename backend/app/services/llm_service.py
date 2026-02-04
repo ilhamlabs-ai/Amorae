@@ -24,6 +24,9 @@ class LLMService:
         facts: List[Fact],
         summary: Optional[ThreadSummary],
         custom_persona_name: Optional[str] = None,
+        user_age: Optional[int] = None,
+        user_bio: Optional[str] = None,
+        companion_profile: Optional[Dict] = None,
     ) -> str:
         """Build the system prompt based on persona and user preferences."""
         
@@ -56,6 +59,9 @@ class LLMService:
             facts=facts_list,
             summary=summary_dict,
             custom_persona_name=persona_custom_name,
+            user_age=user_age,
+            user_bio=user_bio,
+            companion_profile=companion_profile,
         )
     
     async def generate(
@@ -67,12 +73,15 @@ class LLMService:
         facts: List[Fact],
         summary: Optional[ThreadSummary] = None,
         custom_persona_name: Optional[str] = None,
+        user_age: Optional[int] = None,
+        user_bio: Optional[str] = None,
+        companion_profile: Optional[Dict] = None,
     ) -> str:
         """
         Generate complete (non-streaming) response from LLM.
         Returns the full response text at once.
         """
-        system_prompt = self._build_system_prompt(user_name, user_gender, preferences, facts, summary, custom_persona_name)
+        system_prompt = self._build_system_prompt(user_name, user_gender, preferences, facts, summary, custom_persona_name, user_age, user_bio, companion_profile)
         
         # Prepare messages for API
         api_messages = [{"role": "system", "content": system_prompt}]
@@ -130,13 +139,16 @@ class LLMService:
         facts: List[Fact],
         summary: Optional[ThreadSummary] = None,
         custom_persona_name: Optional[str] = None,
+        user_age: Optional[int] = None,
+        user_bio: Optional[str] = None,
+        companion_profile: Optional[Dict] = None,
     ) -> AsyncGenerator[str, None]:
         """
         Generate streaming response from LLM.
         
         Yields text chunks as they are generated.
         """
-        system_prompt = self._build_system_prompt(user_name, user_gender, preferences, facts, summary, custom_persona_name)
+        system_prompt = self._build_system_prompt(user_name, user_gender, preferences, facts, summary, custom_persona_name, user_age, user_bio, companion_profile)
         
         # Prepare messages for API
         api_messages = [{"role": "system", "content": system_prompt}]

@@ -11,6 +11,8 @@ import '../../../shared/widgets/loading_shimmer.dart';
 import '../../../shared/providers/providers.dart';
 import '../../../shared/models/thread_model.dart';
 import '../../../shared/models/persona_model.dart';
+import '../../../shared/models/custom_companion_model.dart';
+import '../../../core/utils/name_validator.dart';
 import 'widgets/persona_drawer.dart';
 
 /// Thread list screen (Home)
@@ -367,94 +369,202 @@ class ThreadListScreen extends ConsumerWidget {
 
     final firestoreService = ref.read(firestoreServiceProvider);
     final user = await firestoreService.getUser(userId);
-    
-    // Always let user choose a persona
-    final selectedPersona = await _showPersonaSelectorDialog(context, user?.prefs.selectedPersona ?? 'girlfriend');
-    if (selectedPersona == null) return; // User cancelled
-    
-    debugPrint('🎭 Selected persona: $selectedPersona');
-    
-    // If girlfriend/boyfriend/friend, ask for custom name
-    String? customName;
-    if (selectedPersona == 'girlfriend' || selectedPersona == 'boyfriend' || selectedPersona == 'friend') {
-      customName = await _showCustomNameDialog(context, selectedPersona);
-      debugPrint('📛 Custom name from dialog: $customName');
-      if (customName == null) return; // User cancelled
+    final companions = await firestoreService.getCompanions(userId);
+
+    final selection = await _showPersonaSelectorDialog(
+      context,
+      user?.prefs.selectedPersona ?? 'amora',
+      companions,
+    );
+    if (selection == null) return;
+
+    CustomCompanionModel? customCompanion;
+    String? selectedPersona;
+    if (selection.type == _PersonaSelectionType.createCompanion) {
+      customCompanion = await _showCreateCompanionDialog(context, ref);
+      if (customCompanion == null) return;
+    } else if (selection.type == _PersonaSelectionType.customCompanion) {
+      customCompanion = selection.companion;
+    } else {
+      selectedPersona = selection.personaName;
     }
-    
-    debugPrint('🔵 Creating thread with persona=$selectedPersona, customName=$customName');
-    
+
     final thread = await firestoreService.createThread(
       userId: userId,
       persona: selectedPersona,
-      customPersonaName: customName,
+      customCompanion: customCompanion,
     );
-    
-    debugPrint('✅ Thread created: id=${thread.id}, persona=${thread.persona}, customName=${thread.customPersonaName}');
-    
+
     ref.read(selectedThreadIdProvider.notifier).state = thread.id;
     if (context.mounted) {
       context.push(AppRoutes.chatPath(thread.id));
     }
   }
 
-  Future<String?> _showCustomNameDialog(BuildContext context, String persona) async {
-    String defaultName = persona == 'girlfriend' ? 'Luna' : (persona == 'boyfriend' ? 'Jack' : 'Alex');
-    final controller = TextEditingController(text: defaultName);
-    
-    return showDialog<String>(
+  Future<CustomCompanionModel?> _showCreateCompanionDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final nameController = TextEditingController();
+    final bioController = TextEditingController();
+    String? gender = 'prefer-not-to-say';
+    String relationship = 'platonic';
+    String? nameError;
+
+    return showDialog<CustomCompanionModel>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'What should I call your ${persona == 'girlfriend' ? 'girlfriend' : (persona == 'boyfriend' ? 'boyfriend' : 'friend')}?',
-          style: AppTextStyles.titleMedium,
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: AppTextStyles.bodyLarge,
-          decoration: InputDecoration(
-            hintText: 'Enter a name',
-            hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textTertiary),
-            filled: true,
-            fillColor: AppColors.background,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.glassBorder),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text('Create Companion', style: AppTextStyles.titleMedium),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    autofocus: true,
+                    style: AppTextStyles.bodyLarge,
+                    decoration: InputDecoration(
+                      hintText: 'Companion name',
+                      errorText: nameError,
+                      hintStyle: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.glassBorder),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.glassBorder),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.accent, width: 2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: gender,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.glassBorder),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'female', child: Text('Female')),
+                      DropdownMenuItem(value: 'male', child: Text('Male')),
+                      DropdownMenuItem(value: 'non-binary', child: Text('Non-binary')),
+                      DropdownMenuItem(value: 'other', child: Text('Other')),
+                      DropdownMenuItem(value: 'prefer-not-to-say', child: Text('Prefer not to say')),
+                    ],
+                    onChanged: (value) => setState(() => gender = value),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: relationship,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.glassBorder),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'romantic', child: Text('Romantic')),
+                      DropdownMenuItem(value: 'platonic', child: Text('Platonic')),
+                      DropdownMenuItem(value: 'mentor', child: Text('Mentor')),
+                      DropdownMenuItem(value: 'coach', child: Text('Coach')),
+                      DropdownMenuItem(value: 'confidant', child: Text('Confidant')),
+                      DropdownMenuItem(value: 'professional', child: Text('Professional')),
+                    ],
+                    onChanged: (value) => setState(() => relationship = value ?? 'platonic'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: bioController,
+                    maxLines: 4,
+                    minLines: 3,
+                    style: AppTextStyles.bodyLarge,
+                    decoration: InputDecoration(
+                      hintText: 'Bio (optional, recommended)',
+                      hintStyle: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.glassBorder),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.glassBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.accent, width: 2),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              Navigator.pop(context, name.isEmpty ? defaultName : name);
-            },
-            child: Text('Continue', style: AppTextStyles.button.copyWith(color: AppColors.accent)),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: AppTextStyles.button.copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final rawName = nameController.text.trim();
+                  final validation = NameValidator.validate(rawName);
+                  if (validation != null) {
+                    setState(() => nameError = validation);
+                    return;
+                  }
+
+                  final userId = ref.read(currentUserIdProvider);
+                  if (userId == null) return;
+
+                  final firestoreService = ref.read(firestoreServiceProvider);
+                  final companion = await firestoreService.createCompanion(
+                    userId: userId,
+                    name: NameValidator.sanitize(rawName),
+                    relationship: relationship,
+                    gender: gender,
+                    bio: bioController.text.trim().isNotEmpty
+                        ? bioController.text.trim()
+                        : null,
+                  );
+
+                  Navigator.pop(context, companion);
+                },
+                child: Text(
+                  'Create',
+                  style: AppTextStyles.button.copyWith(color: AppColors.accent),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Future<String?> _showPersonaSelectorDialog(BuildContext context, String currentPersona) async {
+  Future<_PersonaSelection?> _showPersonaSelectorDialog(
+    BuildContext context,
+    String currentPersona,
+    List<CustomCompanionModel> companions,
+  ) async {
     final personas = PersonaModel.getDefaultPersonas();
-    
-    return showDialog<String>(
+
+    return showDialog<_PersonaSelection>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
@@ -466,81 +576,206 @@ class ThreadListScreen extends ConsumerWidget {
         ),
         content: SizedBox(
           width: double.maxFinite,
-          child: ListView.separated(
+          child: ListView(
             shrinkWrap: true,
-            itemCount: personas.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final persona = personas[index];
-              final isSelected = persona.name == currentPersona;
-              
-              return InkWell(
-                onTap: () => Navigator.pop(context, persona.name),
+            children: [
+              InkWell(
+                onTap: () => Navigator.pop(
+                  context,
+                  const _PersonaSelection.createCompanion(),
+                ),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accent.withOpacity(0.1) : AppColors.background,
+                    color: AppColors.accent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? AppColors.accent : AppColors.glassBorder,
-                      width: isSelected ? 2 : 1,
-                    ),
+                    border: Border.all(color: AppColors.accent, width: 1.5),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: AppColors.primaryGradient,
                         ),
-                        child: Center(
-                          child: Text(
-                            persona.displayName[0],
-                            style: AppTextStyles.headlineSmall.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+                        child: const Icon(Icons.add, color: Colors.white),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              persona.displayName,
-                              style: AppTextStyles.titleMedium.copyWith(
-                                color: isSelected ? AppColors.accent : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              persona.description,
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                        child: Text(
+                          'Create New Companion',
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: AppColors.accent,
+                          ),
                         ),
                       ),
-                      if (isSelected)
-                        Icon(Icons.check_circle, color: AppColors.accent, size: 24),
                     ],
                   ),
                 ),
-              );
-            },
+              ),
+              if (companions.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'YOUR COMPANIONS',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textTertiary,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...companions.map((companion) {
+                  return InkWell(
+                    onTap: () => Navigator.pop(
+                      context,
+                      _PersonaSelection.customCompanion(companion),
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.glassBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: AppColors.primaryGradient,
+                            ),
+                            child: Center(
+                              child: Text(
+                                companion.name.isNotEmpty
+                                    ? companion.name[0].toUpperCase()
+                                    : 'C',
+                                style: AppTextStyles.titleMedium.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  companion.name,
+                                  style: AppTextStyles.titleMedium,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _formatRelationship(companion.relationship),
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                'AI COMPANIONS',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textTertiary,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...personas.map((persona) {
+                final isSelected = persona.name == currentPersona;
+                return InkWell(
+                  onTap: () => Navigator.pop(
+                    context,
+                    _PersonaSelection.defaultPersona(persona.name),
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.accent.withOpacity(0.1)
+                          : AppColors.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? AppColors.accent : AppColors.glassBorder,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppColors.primaryGradient,
+                          ),
+                          child: Center(
+                            child: Text(
+                              persona.displayName[0],
+                              style: AppTextStyles.headlineSmall.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                persona.displayName,
+                                style: AppTextStyles.titleMedium.copyWith(
+                                  color: isSelected
+                                      ? AppColors.accent
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                persona.description,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(Icons.check_circle, color: AppColors.accent, size: 24),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.button.copyWith(color: AppColors.textSecondary),
+            ),
           ),
         ],
       ),
@@ -557,10 +792,52 @@ class ThreadListScreen extends ConsumerWidget {
     context.push(AppRoutes.chatPath(mostRecentThread.id));
   }
 
+  String _formatRelationship(String relationship) {
+    switch (relationship) {
+      case 'romantic':
+        return 'Romantic';
+      case 'platonic':
+        return 'Platonic';
+      case 'mentor':
+        return 'Mentor';
+      case 'coach':
+        return 'Coach';
+      case 'confidant':
+        return 'Confidant';
+      case 'professional':
+        return 'Professional';
+      default:
+        return relationship;
+    }
+  }
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
   }
+}
+
+enum _PersonaSelectionType {
+  defaultPersona,
+  customCompanion,
+  createCompanion,
+}
+
+class _PersonaSelection {
+  final _PersonaSelectionType type;
+  final String? personaName;
+  final CustomCompanionModel? companion;
+
+  const _PersonaSelection._(this.type, {this.personaName, this.companion});
+
+  const _PersonaSelection.createCompanion()
+      : this._(_PersonaSelectionType.createCompanion);
+
+  const _PersonaSelection.defaultPersona(String personaName)
+      : this._(_PersonaSelectionType.defaultPersona, personaName: personaName);
+
+  const _PersonaSelection.customCompanion(CustomCompanionModel companion)
+      : this._(_PersonaSelectionType.customCompanion, companion: companion);
 }

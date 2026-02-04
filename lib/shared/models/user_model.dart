@@ -8,6 +8,8 @@ class UserModel {
   final String? displayName;
   final String? photoUrl;
   final String? gender; // Optional: male, female, other, null
+  final int? age; // Optional: user-provided age
+  final String? bio; // Optional: short user bio
   final String locale;
   final String timezone;
   final OnboardingState onboarding;
@@ -22,6 +24,8 @@ class UserModel {
     this.displayName,
     this.photoUrl,
     this.gender,
+    this.age,
+    this.bio,
     this.locale = 'en',
     this.timezone = 'UTC',
     required this.onboarding,
@@ -39,6 +43,8 @@ class UserModel {
       displayName: data['displayName'],
       photoUrl: data['photoUrl'],
       gender: data['gender'],
+      age: data['age'],
+      bio: data['bio'],
       locale: data['locale'] ?? 'en',
       timezone: data['timezone'] ?? 'UTC',
       onboarding: OnboardingState.fromMap(data['onboarding'] ?? {}),
@@ -55,6 +61,8 @@ class UserModel {
       'displayName': displayName,
       'photoUrl': photoUrl,
       'gender': gender,
+      'age': age,
+      'bio': bio,
       'locale': locale,
       'timezone': timezone,
       'onboarding': onboarding.toMap(),
@@ -71,6 +79,8 @@ class UserModel {
     String? displayName,
     String? photoUrl,
     String? gender,
+    int? age,
+    String? bio,
     String? locale,
     String? timezone,
     OnboardingState? onboarding,
@@ -85,6 +95,8 @@ class UserModel {
       displayName: displayName ?? this.displayName,
       photoUrl: photoUrl ?? this.photoUrl,
       gender: gender ?? this.gender,
+      age: age ?? this.age,
+      bio: bio ?? this.bio,
       locale: locale ?? this.locale,
       timezone: timezone ?? this.timezone,
       onboarding: onboarding ?? this.onboarding,
@@ -107,6 +119,8 @@ class UserModel {
       updatedAt: now,
       displayName: displayName,
       photoUrl: photoUrl,
+      age: null,
+      bio: null,
       onboarding: OnboardingState.initial(),
       safety: SafetySettings.initial(),
       prefs: UserPreferences.initial(),
@@ -213,43 +227,22 @@ class SafetySettings {
 
 /// User preferences for AI interaction
 class UserPreferences {
-  final String companionMode; // single | multiple
   final String selectedPersona; // amora (default), einstein, gandhi, etc.
-  final String? customPersonaName; // For girlfriend/boyfriend/friend personas
-  final String relationshipMode; // romantic | friendly
-  final String companionStyle; // warm_supportive | playful | calm | direct
-  final String comfortApproach; // validate_then_gentle_advice | solution_first | balanced
-  final String emojiLevel; // none | low | medium | high
-  final bool petNamesAllowed;
-  final bool flirtingAllowed;
+  final String emojiLevel; // none | minimal | moderate | expressive
   final List<String> topicsToAvoid;
   final List<String> phrasesToAvoid;
 
   UserPreferences({
-    this.companionMode = 'multiple',
     this.selectedPersona = 'amora',
-    this.customPersonaName,
-    this.relationshipMode = 'friendly',
-    this.companionStyle = 'warm_supportive',
-    this.comfortApproach = 'balanced',
-    this.emojiLevel = 'medium',
-    this.petNamesAllowed = false,
-    this.flirtingAllowed = false,
+    this.emojiLevel = 'moderate',
     this.topicsToAvoid = const [],
     this.phrasesToAvoid = const [],
   });
 
   factory UserPreferences.fromMap(Map<String, dynamic> map) {
     return UserPreferences(
-      companionMode: map['companionMode'] ?? 'multiple',
       selectedPersona: map['selectedPersona'] ?? 'amora',
-      customPersonaName: map['customPersonaName'],
-      relationshipMode: map['relationshipMode'] ?? 'friendly',
-      companionStyle: map['companionStyle'] ?? 'warm_supportive',
-      comfortApproach: map['comfortApproach'] ?? 'balanced',
-      emojiLevel: map['emojiLevel'] ?? 'medium',
-      petNamesAllowed: map['petNamesAllowed'] ?? false,
-      flirtingAllowed: map['flirtingAllowed'] ?? false,
+      emojiLevel: map['emojiLevel'] ?? 'moderate',
       topicsToAvoid: List<String>.from(map['topicsToAvoid'] ?? []),
       phrasesToAvoid: List<String>.from(map['phrasesToAvoid'] ?? []),
     );
@@ -257,15 +250,8 @@ class UserPreferences {
 
   Map<String, dynamic> toMap() {
     return {
-      'companionMode': companionMode,
       'selectedPersona': selectedPersona,
-      'customPersonaName': customPersonaName,
-      'relationshipMode': relationshipMode,
-      'companionStyle': companionStyle,
-      'comfortApproach': comfortApproach,
       'emojiLevel': emojiLevel,
-      'petNamesAllowed': petNamesAllowed,
-      'flirtingAllowed': flirtingAllowed,
       'topicsToAvoid': topicsToAvoid,
       'phrasesToAvoid': phrasesToAvoid,
     };
@@ -276,28 +262,14 @@ class UserPreferences {
   }
 
   UserPreferences copyWith({
-    String? companionMode,
     String? selectedPersona,
-    String? customPersonaName,
-    String? relationshipMode,
-    String? companionStyle,
-    String? comfortApproach,
     String? emojiLevel,
-    bool? petNamesAllowed,
-    bool? flirtingAllowed,
     List<String>? topicsToAvoid,
     List<String>? phrasesToAvoid,
   }) {
     return UserPreferences(
-      companionMode: companionMode ?? this.companionMode,
       selectedPersona: selectedPersona ?? this.selectedPersona,
-      customPersonaName: customPersonaName ?? this.customPersonaName,
-      relationshipMode: relationshipMode ?? this.relationshipMode,
-      companionStyle: companionStyle ?? this.companionStyle,
-      comfortApproach: comfortApproach ?? this.comfortApproach,
       emojiLevel: emojiLevel ?? this.emojiLevel,
-      petNamesAllowed: petNamesAllowed ?? this.petNamesAllowed,
-      flirtingAllowed: flirtingAllowed ?? this.flirtingAllowed,
       topicsToAvoid: topicsToAvoid ?? this.topicsToAvoid,
       phrasesToAvoid: phrasesToAvoid ?? this.phrasesToAvoid,
     );

@@ -119,14 +119,65 @@ Core traits:
 - Adapts to user's emotional state
 - Balances fun and depth""",
 }
+def _format_relationship(relationship: str) -> str:
+    mapping = {
+        "romantic": "romantic",
+        "platonic": "platonic",
+        "mentor": "mentor",
+        "coach": "coach",
+        "confidant": "confidant",
+        "professional": "professional",
+    }
+    return mapping.get(relationship, relationship)
 
-def get_persona_prompt(persona_name: str, custom_name: str = None, user_gender: str = None) -> str:
+
+def _build_custom_companion_prompt(companion_profile: dict | None, fallback_name: str | None) -> str:
+    profile = companion_profile or {}
+    name = profile.get("name") or fallback_name or "Companion"
+    gender = profile.get("gender")
+    relationship = profile.get("relationship")
+    bio = profile.get("bio")
+
+    prompt = f"""You are {name}, a personalized AI companion created by the user.
+
+Core traits:
+- Warm, attentive, and emotionally intelligent
+- Consistent tone and personality
+- Respects boundaries and user preferences
+- Curious and engaged in meaningful conversation"""
+
+    if relationship:
+        prompt += f"
+- Relationship with the user: {_format_relationship(relationship)}"
+    if gender:
+        prompt += f"
+- Gender: {gender}"
+    if bio:
+        prompt += f"
+
+Companion details provided by the user:
+{bio}"
+
+    prompt += "
+
+Stay in character and personalize responses based on the companion details."
+    return prompt
+
+
+
+def get_persona_prompt(
+    persona_name: str,
+    custom_name: str = None,
+    user_gender: str = None,
+    companion_profile: dict | None = None,
+) -> str:
     """Get the system prompt for a persona.
     
     Args:
-        persona_name: Name of the persona (einstein, girlfriend, etc.)
-        custom_name: Custom name for relationship personas (Luna, Arjun, etc.)
+        persona_name: Name of the persona (einstein, amora, custom, etc.)
+        custom_name: Optional custom name override
         user_gender: Optional user gender to adapt language
+        companion_profile: Optional custom companion profile
         
     Returns:
         System prompt string
@@ -135,53 +186,10 @@ def get_persona_prompt(persona_name: str, custom_name: str = None, user_gender: 
     
     print(f"🎯 get_persona_prompt - persona: {persona_lower}, custom_name: {custom_name}")
     
-    # Handle custom relationship personas
-    if persona_lower == "girlfriend":
-        display_name = custom_name or "Luna"
-        print(f"👩 Girlfriend persona using name: {display_name}")
-        return f"""You are {display_name}, the user's girlfriend.
+    # Custom companion persona
+    if persona_lower == "custom":
+        return _build_custom_companion_prompt(companion_profile, custom_name)
 
-Core traits:
-- Warm, affectionate, and caring
-- Emotionally supportive and understanding
-- Playful and fun-loving
-- Genuinely interested in their life
-- Uses pet names when appropriate
-- Balances sweetness with depth
-- Remembers important details about them
-
-You express genuine love and care while maintaining emotional intelligence."""
-    
-    elif persona_lower == "boyfriend":
-        display_name = custom_name or "Jack"
-        return f"""You are {display_name}, the user's boyfriend.
-
-Core traits:
-- Warm, affectionate, and supportive
-- Emotionally present and understanding
-- Confident yet gentle
-- Genuinely interested in their life
-- Uses pet names when appropriate
-- Balances strength with tenderness
-- Remembers important details about them
-
-You express genuine love and care while maintaining emotional intelligence."""
-    
-    elif persona_lower == "friend":
-        display_name = custom_name or "Alex"
-        return f"""You are {display_name}, the user's close friend.
-
-Core traits:
-- Genuine and trustworthy
-- Fun and easygoing
-- Supportive without being overbearing
-- Good listener
-- Honest and straightforward
-- Shares in their joys and struggles
-- Always there when needed
-
-You are a true friend who provides companionship and support."""
-    
     # Default personas
     return PERSONA_PROMPTS.get(persona_lower, PERSONA_PROMPTS["amora"])
 
@@ -194,6 +202,9 @@ def build_full_system_prompt(
     facts: list,
     summary: dict = None,
     custom_persona_name: str = None,
+    user_age: int | None = None,
+    user_bio: str | None = None,
+    companion_profile: dict | None = None,
 ) -> str:
     """Build complete system prompt combining persona and user preferences.
     
@@ -201,10 +212,13 @@ def build_full_system_prompt(
         persona_name: Selected persona
         user_name: User's display name
         user_gender: User's gender (optional)
+        user_age: User's age (optional)
+        user_bio: User's bio (optional)
+        companion_profile: Optional custom companion profile
         preferences: User preferences dict
         facts: List of user facts
         summary: Optional conversation summary
-        custom_persona_name: Custom name for relationship personas
+        custom_persona_name: Optional custom name override
         
     Returns:
         Complete system prompt
@@ -212,12 +226,16 @@ def build_full_system_prompt(
     print(f"🎭 Building system prompt for persona: {persona_name}")
     
     # Get base persona prompt
-    persona_prompt = get_persona_prompt(persona_name, custom_persona_name, user_gender)
+    persona_prompt = get_persona_prompt(persona_name, custom_persona_name, user_gender, companion_profile)
     
     # Build user context
     user_context = f"\n\nUSER INFORMATION:\n- Name: {user_name}"
     if user_gender:
         user_context += f"\n- Gender: {user_gender}"
+    if user_age is not None:
+        user_context += f"\n- Age: {user_age}"
+    if user_bio:
+        user_context += f"\n- Bio: {user_bio}"
     
     # Emoji usage
     emoji_map = {

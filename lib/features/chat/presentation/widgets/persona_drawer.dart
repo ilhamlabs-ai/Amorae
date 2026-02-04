@@ -16,8 +16,6 @@ class PersonaDrawer extends ConsumerStatefulWidget {
 }
 
 class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
-  bool _showCustomPersonas = false;
-
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
@@ -80,80 +78,21 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
-        // Relationships Section
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Text(
-            'RELATIONSHIPS',
+            'AI COMPANIONS',
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.textTertiary,
               letterSpacing: 1.2,
             ),
           ),
         ),
-        _buildCustomPersonaTile(
-          type: PersonaType.girlfriend,
-          icon: Icons.favorite,
-          title: 'Girlfriend',
-          defaultName: 'Luna',
+        ...defaultPersonas.map((persona) => _buildPersonaTile(
+          persona: persona,
+          isSelected: selectedPersona == persona.name,
           user: user,
-        ),
-        _buildCustomPersonaTile(
-          type: PersonaType.boyfriend,
-          icon: Icons.favorite_border,
-          title: 'Boyfriend',
-          defaultName: 'Jack',
-          user: user,
-        ),
-        _buildCustomPersonaTile(
-          type: PersonaType.friend,
-          icon: Icons.people,
-          title: 'Close Friend',
-          defaultName: 'Alex',
-          user: user,
-        ),
-
-        // Divider
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Divider(color: AppColors.glassBorder, height: 1),
-        ),
-
-        // AI Companions Section (expandable)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'AI COMPANIONS',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textTertiary,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  _showCustomPersonas ? Icons.expand_less : Icons.expand_more,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _showCustomPersonas = !_showCustomPersonas;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-        if (_showCustomPersonas) ...[
-          ...defaultPersonas.map((persona) => _buildPersonaTile(
-            persona: persona,
-            isSelected: selectedPersona == persona.name,
-            user: user,
-          )),
-        ],
+        )),
       ],
     );
   }
@@ -197,69 +136,7 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
       trailing: isSelected
           ? const Icon(Icons.check_circle, color: AppColors.accent, size: 20)
           : null,
-      onTap: () => _selectPersona(user, persona.name, null),
-    );
-  }
-
-  Widget _buildCustomPersonaTile({
-    required PersonaType type,
-    required IconData icon,
-    required String title,
-    required String defaultName,
-    required UserModel user,
-  }) {
-    final isSelected = user.prefs.selectedPersona == type.name;
-    final customName = user.prefs.customPersonaName ?? defaultName;
-
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.accent.withOpacity(0.2)
-              : AppColors.background,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? AppColors.accent : AppColors.textSecondary,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        isSelected ? customName : title,
-        style: AppTextStyles.titleMedium.copyWith(
-          color: isSelected ? AppColors.accent : AppColors.textPrimary,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        isSelected ? 'Tap to rename' : 'Create $title persona',
-        style: AppTextStyles.bodySmall.copyWith(
-          color: AppColors.textSecondary,
-        ),
-      ),
-      trailing: isSelected
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 18),
-                  color: AppColors.textSecondary,
-                  onPressed: () => _showRenameDialog(user, type, customName),
-                ),
-                const Icon(Icons.check_circle, color: AppColors.accent, size: 20),
-              ],
-            )
-          : null,
-      onTap: () {
-        if (isSelected) {
-          _showRenameDialog(user, type, customName);
-        } else {
-          _showCreateCustomDialog(user, type, defaultName);
-        }
-      },
+      onTap: () => _selectPersona(user, persona.name),
     );
   }
 
@@ -293,33 +170,27 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
   Future<void> _selectPersona(
     UserModel user,
     String personaName,
-    String? customName,
   ) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
 
     try {
       final firestoreService = ref.read(firestoreServiceProvider);
-      
-      // Update user's selected persona
+
       await firestoreService.updateUser(userId, {
         'prefs.selectedPersona': personaName,
-        if (customName != null) 'prefs.customPersonaName': customName,
       });
 
-      // Find existing thread with this persona
       final threads = await firestoreService.getUserThreads(userId);
       final existingThread = threads.where((t) => t.persona == personaName).toList();
-      
+
       if (mounted) {
         Navigator.pop(context);
-        
+
         if (existingThread.isNotEmpty) {
-          // Open existing thread (most recent one if multiple)
           existingThread.sort((a, b) => b.lastMessageAt.compareTo(a.lastMessageAt));
           context.go('/chat/${existingThread.first.id}');
         } else {
-          // Create new thread with this persona
           final newThread = await firestoreService.createThread(
             userId: userId,
             persona: personaName,
@@ -327,9 +198,11 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
           context.go('/chat/${newThread.id}');
         }
 
+        final persona = PersonaModel.getByName(personaName);
+        final displayName = persona?.displayName ?? personaName;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Chatting with ${customName ?? personaName}'),
+            content: Text('Chatting with $displayName'),
             duration: const Duration(seconds: 2),
             backgroundColor: AppColors.accent,
           ),
@@ -347,118 +220,4 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
     }
   }
 
-  void _showCreateCustomDialog(
-    UserModel user,
-    PersonaType type,
-    String defaultName,
-  ) {
-    final controller = TextEditingController(text: defaultName);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Create ${type.name.capitalize()} Persona', style: AppTextStyles.headlineSmall),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Give your ${type.name} a name:',
-              style: AppTextStyles.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: 'Enter name',
-                filled: true,
-                fillColor: AppColors.background,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.glassBorder),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.accent, width: 2),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                Navigator.pop(context);
-                _selectPersona(user, type.name, name);
-              }
-            },
-            child: Text('Create', style: AppTextStyles.button.copyWith(color: AppColors.accent)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRenameDialog(
-    UserModel user,
-    PersonaType type,
-    String currentName,
-  ) {
-    final controller = TextEditingController(text: currentName);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Rename Persona', style: AppTextStyles.headlineSmall),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: 'Enter new name',
-            filled: true,
-            fillColor: AppColors.background,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.glassBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.accent, width: 2),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                Navigator.pop(context);
-                _selectPersona(user, type.name, name);
-              }
-            },
-            child: Text('Save', style: AppTextStyles.button.copyWith(color: AppColors.accent)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-extension StringExtension on String {
-  String capitalize() {
-    if (isEmpty) return this;
-    return '${this[0].toUpperCase()}${substring(1)}';
-  }
 }

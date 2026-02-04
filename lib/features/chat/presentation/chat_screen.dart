@@ -410,6 +410,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
     
     final personaName = thread.persona!;
+
+    // Custom companion name stored on thread
+    final customCompanionName = thread.customCompanion?['name'] as String?;
+    if (customCompanionName != null && customCompanionName.isNotEmpty) {
+      return customCompanionName;
+    }
     
     // Check for thread-specific custom name first
     if (thread.customPersonaName != null && thread.customPersonaName!.isNotEmpty) {
@@ -422,25 +428,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return persona.displayName;
     }
     
-    // For custom personas without thread name, use default
-    if (['girlfriend', 'boyfriend', 'friend'].contains(personaName)) {
-      return _getDefaultCustomName(personaName);
-    }
-    
     return personaName;
-  }
-  
-  String _getDefaultCustomName(String personaType) {
-    switch (personaType) {
-      case 'girlfriend':
-        return 'Luna';
-      case 'boyfriend':
-        return 'Jack';
-      case 'friend':
-        return 'Alex';
-      default:
-        return personaType;
-    }
   }
 
   void _confirmDeleteChat() {

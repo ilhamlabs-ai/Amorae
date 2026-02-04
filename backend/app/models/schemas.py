@@ -83,12 +83,7 @@ class UserPreferences(BaseModel):
     """User AI preferences."""
     selected_persona: str = Field("amora", alias="selectedPersona")
     custom_persona_name: Optional[str] = Field(None, alias="customPersonaName")
-    relationship_mode: str = Field("friendly", alias="relationshipMode")
-    companion_style: str = Field("warm_supportive", alias="companionStyle")
-    comfort_approach: str = Field("balanced", alias="comfortApproach")
-    emoji_level: str = Field("medium", alias="emojiLevel")
-    pet_names_allowed: bool = Field(False, alias="petNamesAllowed")
-    flirting_allowed: bool = Field(False, alias="flirtingAllowed")
+    emoji_level: str = Field("moderate", alias="emojiLevel")
     topics_to_avoid: List[str] = Field(default_factory=list, alias="topicsToAvoid")
     phrases_to_avoid: List[str] = Field(default_factory=list, alias="phrasesToAvoid")
     
@@ -96,7 +91,7 @@ class UserPreferences(BaseModel):
         populate_by_name = True
 
 
-class ThreadSummary(BaseModel):
+class ThreadSummary(BaseModel):(BaseModel):
     """Summary of a conversation thread."""
     text: str
     from_seq: int = Field(..., alias="fromSeq")

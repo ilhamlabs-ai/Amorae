@@ -57,11 +57,15 @@ class ChatService:
         
         preferences = UserPreferences(**(user_data.get("prefs", {})))
         user_name = user_data.get("displayName", "Friend")
+        user_gender = user_data.get("gender")
+        user_age = user_data.get("age")
+        user_bio = user_data.get("bio")
         
         # Override persona with thread's persona if it exists
         # This ensures each thread maintains its own persona
         thread_persona = thread_data.get("persona")
         thread_custom_name = thread_data.get("customPersonaName")
+        companion_profile = thread_data.get("customCompanion")
         
         print(f"🎭 Thread persona: {thread_persona}")
         print(f"📛 Thread customPersonaName: {thread_custom_name}")
@@ -141,11 +145,14 @@ class ChatService:
         full_response = await self.llm.generate(
             messages=messages,
             user_name=user_name,
-            user_gender=user_data.get("gender"),
+            user_gender=user_gender,
             preferences=preferences,
             facts=facts,
             summary=summary,
             custom_persona_name=custom_name,
+            user_age=user_age,
+            user_bio=user_bio,
+            companion_profile=companion_profile,
         )
         
         # Create assistant message
@@ -218,10 +225,14 @@ class ChatService:
             
             preferences = UserPreferences(**(user_data.get("prefs", {})))
             user_name = user_data.get("displayName", "Friend")
+            user_gender = user_data.get("gender")
+            user_age = user_data.get("age")
+            user_bio = user_data.get("bio")
             
             # Override persona with thread's persona if it exists
             # This ensures each thread maintains its own persona
             thread_persona = thread_data.get("persona")
+            companion_profile = thread_data.get("customCompanion")
             if thread_persona:
                 print(f"🎭 Using thread persona: {thread_persona}")
                 preferences.selected_persona = thread_persona
@@ -332,6 +343,9 @@ class ChatService:
                 facts=facts,
                 summary=summary,
                 custom_persona_name=thread_data.get("customPersonaName"),
+                user_age=user_age,
+                user_bio=user_bio,
+                companion_profile=companion_profile,
             ):
                 full_response += chunk
                 cursor += len(chunk)

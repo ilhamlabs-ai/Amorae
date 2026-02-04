@@ -27,14 +27,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _ageConfirmed = false;
   bool _aiDisclosureAccepted = false;
   String? _gender; // male, female, other, prefer-not-to-say
-  String _companionMode = 'multiple'; // single or multiple
-  String _relationshipMode = 'friendly';
-  String _companionStyle = 'warm_supportive';
-  String _comfortApproach = 'balanced';
-  String _emojiLevel = 'medium';
-  bool _petNamesAllowed = false;
-  bool _flirtingAllowed = false;
   String _preferredName = '';
+  String _ageText = '';
+  String _bio = '';
 
   @override
   void initState() {
@@ -43,6 +38,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final user = ref.read(currentUserProvider).valueOrNull;
     if (user?.displayName != null) {
       _preferredName = user!.displayName!.split(' ').first;
+    }
+    if (user?.gender != null) {
+      _gender = user!.gender;
+    }
+    if (user?.age != null) {
+      _ageText = user!.age!.toString();
+    }
+    if (user?.bio != null) {
+      _bio = user!.bio!;
     }
   }
 
@@ -53,7 +57,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage < 4) {
+    if (_currentPage < 2) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -77,14 +81,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case 0:
         return _ageConfirmed && _aiDisclosureAccepted;
       case 1:
-        return _gender != null;
+        return _gender != null && _preferredName.trim().isNotEmpty && _isValidAge();
       case 2:
-      case 3:
-      case 4:
         return true;
       default:
         return true;
     }
+  }
+
+  bool _isValidAge() {
+    final age = int.tryParse(_ageText.trim());
+    if (age == null) return false;
+    return age >= 18 && age <= 120;
   }
 
   Future<void> _completeOnboarding() async {
@@ -100,6 +108,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await firestoreService.updateUser(userId, {
         'displayName': _preferredName.isNotEmpty ? _preferredName : null,
         'gender': _gender,
+        'age': int.tryParse(_ageText.trim()),
+        'bio': _bio.trim().isNotEmpty ? _bio.trim() : null,
         'onboarding': OnboardingState(
           completed: true,
           version: 1,
@@ -111,22 +121,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           dependencyGuardEnabled: true,
           selfHarmEscalationEnabled: true,
         ).toMap(),
-        'prefs': UserPreferences(
-          companionMode: _companionMode,
-          relationshipMode: _relationshipMode,
-          companionStyle: _companionStyle,
-          comfortApproach: _comfortApproach,
-          emojiLevel: _emojiLevel,
-          petNamesAllowed: _petNamesAllowed,
-          flirtingAllowed: _flirtingAllowed,
-        ).toMap(),
       });
-
-      // Create first thread
-      await firestoreService.createThread(
-        userId: userId,
-        title: 'Chat with Amorae',
-      );
 
       if (mounted) {
         context.go(AppRoutes.home);
@@ -167,10 +162,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   },
                   children: [
                     _buildDisclosurePage(),
-                    _buildGenderPage(),
-                    _buildCompanionModePage(),
-                    _buildRelationshipPage(),
-                    _buildNamePage(),
+                    _buildProfilePage(),
+                    _buildBioPage(),
                   ],
                 ),
               ),
@@ -191,7 +184,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (index) {
+            children: List.generate(3, (index) {
               return Container(
                 width: index == _currentPage ? 32 : 12,
                 height: 4,
@@ -232,8 +225,65 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
           
-          const SizedBox(height: 32),
-          
+          const SizedBox(height: 24),
+
+          GlassCard(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                TextFormField(
+                  initialValue: _preferredName,
+                  style: AppTextStyles.titleLarge,
+                  decoration: InputDecoration(
+                    hintText: 'Your name',
+                    hintStyle: AppTextStyles.titleLarge.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (value) {
+                    setState(() => _preferredName = value);
+                  },
+                ),
+                const Divider(color: AppColors.glassBorder, height: 24),
+                TextFormField(
+                  initialValue: _ageText,
+                  style: AppTextStyles.titleLarge,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: 'Your age',
+                    hintStyle: AppTextStyles.titleLarge.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (value) {
+                    setState(() => _ageText = value);
+                  },
+                ),
+                if (_ageText.isNotEmpty && !_isValidAge()) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Please enter a valid age (18+).',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
+
+          const SizedBox(height: 24),
+
+          Text(
+            'Gender',
+            style: AppTextStyles.labelLarge.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // AI Disclosure card
           GlassCard(
             padding: const EdgeInsets.all(20),
@@ -337,7 +387,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildGenderPage() {
+  Widget _buildProfilePage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -407,7 +457,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildCompanionModePage() {
+  Widget _buildBioPage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -416,280 +466,50 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const SizedBox(height: 20),
           
           Text(
-            'Choose your companion',
+            'A little about you',
             style: AppTextStyles.displaySmall,
           ).animate().fadeIn(duration: 400.ms),
           
           const SizedBox(height: 8),
           
           Text(
-            'Who would you like to talk to?',
+            'Optional, but highly recommended. Share what you like, topics you enjoy, or anything you want your companion to understand.',
             style: AppTextStyles.bodyLarge.copyWith(
               color: AppColors.textSecondary,
             ),
           ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
           
-          const SizedBox(height: 32),
-          
-          _buildOptionCard(
-            title: 'Single Companion',
-            description: 'One dedicated AI companion (girlfriend, boyfriend, or friend)',
-            icon: Icons.person,
-            iconColor: AppColors.accent,
-            isSelected: _companionMode == 'single',
-            onTap: () => setState(() => _companionMode = 'single'),
-          ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
-          
-          const SizedBox(height: 12),
-          
-          _buildOptionCard(
-            title: 'Multiple Companions',
-            description: 'Access to all 10 AI companions with different personalities',
-            icon: Icons.groups,
-            iconColor: AppColors.info,
-            isSelected: _companionMode == 'multiple',
-            onTap: () => setState(() => _companionMode = 'multiple'),
-          ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRelationshipPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 20),
-          
-          Text(
-            'How would you like\nour connection?',
-            style: AppTextStyles.displaySmall,
-          ).animate().fadeIn(duration: 400.ms),
-          
-          const SizedBox(height: 8),
-          
-          Text(
-            'Choose the type of relationship you prefer',
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
-          
-          const SizedBox(height: 32),
-          
-          _buildOptionCard(
-            title: 'Romantic Partner',
-            description: 'A loving, caring companion who\'s always there for you',
-            icon: Icons.favorite,
-            iconColor: AppColors.accent,
-            isSelected: _relationshipMode == 'romantic',
-            onTap: () => setState(() => _relationshipMode = 'romantic'),
-          ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
-          
-          const SizedBox(height: 12),
-          
-          _buildOptionCard(
-            title: 'Close Friend',
-            description: 'A supportive friend who listens and understands',
-            icon: Icons.people,
-            iconColor: AppColors.info,
-            isSelected: _relationshipMode == 'friendly',
-            onTap: () => setState(() => _relationshipMode = 'friendly'),
-          ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
-          
           const SizedBox(height: 24),
-          
-          if (_relationshipMode == 'romantic') ...[
-            _buildCheckbox(
-              value: _petNamesAllowed,
-              label: 'Allow pet names (babe, honey, etc.)',
-              onChanged: (value) {
-                setState(() => _petNamesAllowed = value ?? false);
-              },
-            ),
-            const SizedBox(height: 8),
-            _buildCheckbox(
-              value: _flirtingAllowed,
-              label: 'Allow flirting and playful banter',
-              onChanged: (value) {
-                setState(() => _flirtingAllowed = value ?? false);
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPersonalityPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 20),
-          
-          Text(
-            'Customize your\ncompanion\'s style',
-            style: AppTextStyles.displaySmall,
-          ).animate().fadeIn(duration: 400.ms),
-          
-          const SizedBox(height: 32),
-          
-          Text(
-            'Personality',
-            style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildChip('Warm & Supportive', 'warm_supportive', _companionStyle,
-                  (v) => setState(() => _companionStyle = v)),
-              _buildChip('Playful', 'playful', _companionStyle,
-                  (v) => setState(() => _companionStyle = v)),
-              _buildChip('Calm', 'calm', _companionStyle,
-                  (v) => setState(() => _companionStyle = v)),
-              _buildChip('Direct', 'direct', _companionStyle,
-                  (v) => setState(() => _companionStyle = v)),
-            ],
-          ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
-          
-          const SizedBox(height: 24),
-          
-          Text(
-            'When you\'re feeling down',
-            style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildChip('Validate first', 'validate_then_gentle_advice',
-                  _comfortApproach, (v) => setState(() => _comfortApproach = v)),
-              _buildChip('Give solutions', 'solution_first', _comfortApproach,
-                  (v) => setState(() => _comfortApproach = v)),
-              _buildChip('Balanced', 'balanced', _comfortApproach,
-                  (v) => setState(() => _comfortApproach = v)),
-            ],
-          ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
-          
-          const SizedBox(height: 24),
-          
-          Text(
-            'Emoji usage',
-            style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildChip('None', 'none', _emojiLevel,
-                  (v) => setState(() => _emojiLevel = v)),
-              _buildChip('Low', 'low', _emojiLevel,
-                  (v) => setState(() => _emojiLevel = v)),
-              _buildChip('Medium 😊', 'medium', _emojiLevel,
-                  (v) => setState(() => _emojiLevel = v)),
-              _buildChip('High 🥰💕', 'high', _emojiLevel,
-                  (v) => setState(() => _emojiLevel = v)),
-            ],
-          ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNamePage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 20),
-          
-          Text(
-            'Almost there!',
-            style: AppTextStyles.displaySmall,
-          ).animate().fadeIn(duration: 400.ms),
-          
-          const SizedBox(height: 8),
-          
-          Text(
-            'What should I call you?',
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
-          
-          const SizedBox(height: 32),
           
           GlassCard(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  initialValue: _preferredName,
-                  style: AppTextStyles.headlineMedium,
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    hintText: 'Your name',
-                    hintStyle: AppTextStyles.headlineMedium.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                  ),
-                  onChanged: (value) {
-                    setState(() => _preferredName = value);
-                  },
+            child: TextFormField(
+              initialValue: _bio,
+              maxLines: 6,
+              minLines: 4,
+              style: AppTextStyles.bodyLarge,
+              decoration: InputDecoration(
+                hintText: 'I like deep conversations, music, traveling...',
+                hintStyle: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textTertiary,
                 ),
-              ],
+                border: InputBorder.none,
+              ),
+              onChanged: (value) {
+                setState(() => _bio = value);
+              },
             ),
           ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
-          
-          const SizedBox(height: 32),
-          
-          // Summary
-          GlassCard(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your companion settings',
-                  style: AppTextStyles.titleMedium,
-                ),
-                const SizedBox(height: 16),
-                _buildSummaryRow(
-                  'Relationship',
-                  _relationshipMode == 'romantic' ? 'Romantic Partner' : 'Close Friend',
-                ),
-                _buildSummaryRow('Style', _formatStyle(_companionStyle)),
-                _buildSummaryRow('Comfort', _formatComfort(_comfortApproach)),
-                _buildSummaryRow('Emojis', _emojiLevel.capitalize()),
-              ],
-            ),
-          ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
         ],
       ),
     );
   }
+
+
+
+
+
+
 
   Widget _buildCheckbox({
     required bool value,
@@ -791,54 +611,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildChip(
-    String label,
-    String value,
-    String selected,
-    ValueChanged<String> onChanged,
-  ) {
-    final isSelected = value == selected;
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primaryStart.withOpacity(0.2)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.accent : AppColors.glassBorder,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.labelMedium.copyWith(
-            color: isSelected ? AppColors.accent : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildSummaryRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          Text(value, style: AppTextStyles.bodyMedium),
-        ],
-      ),
-    );
-  }
+
+
 
   Widget _buildNavigation() {
     return Container(
@@ -868,8 +643,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           
           Expanded(
             child: GradientButton(
-              text: _currentPage == 3 ? 'Start Chatting' : 'Continue',
-              icon: _currentPage == 3 ? Icons.favorite : Icons.arrow_forward,
+              text: _currentPage == 2 ? 'Finish' : 'Continue',
+              icon: _currentPage == 2 ? Icons.check : Icons.arrow_forward,
               iconLeading: false,
               isEnabled: _canContinue(),
               isLoading: _isLoading,
@@ -881,38 +656,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  String _formatStyle(String style) {
-    switch (style) {
-      case 'warm_supportive':
-        return 'Warm & Supportive';
-      case 'playful':
-        return 'Playful';
-      case 'calm':
-        return 'Calm';
-      case 'direct':
-        return 'Direct';
-      default:
-        return style;
-    }
-  }
 
-  String _formatComfort(String approach) {
-    switch (approach) {
-      case 'validate_then_gentle_advice':
-        return 'Validate First';
-      case 'solution_first':
-        return 'Solutions';
-      case 'balanced':
-        return 'Balanced';
-      default:
-        return approach;
-    }
-  }
+
+
 }
 
-extension StringExtension on String {
-  String capitalize() {
-    if (isEmpty) return this;
-    return '${this[0].toUpperCase()}${substring(1)}';
-  }
-}
+

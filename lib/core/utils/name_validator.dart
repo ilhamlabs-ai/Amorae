@@ -53,20 +53,11 @@ class NameValidator {
   
   /// Get default name for persona type
   static String getDefaultName(String personaType) {
-    switch (personaType) {
-      case 'girlfriend':
-        return 'Luna';
-      case 'boyfriend':
-        return 'Jack';
-      case 'friend':
-        return 'Alex';
-      default:
-        return 'Amorae';
-    }
+    return 'Companion';
   }
   
   /// Check if persona type supports custom names
   static bool supportsCustomName(String? personaType) {
-    return ['girlfriend', 'boyfriend', 'friend'].contains(personaType);
+    return true;
   }
 }

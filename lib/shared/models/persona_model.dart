@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Persona type enum
 enum PersonaType {
   // Default personas
@@ -13,11 +11,6 @@ enum PersonaType {
   sherlock,
   athena,
   amora,
-  
-  // Custom relationship personas
-  girlfriend,
-  boyfriend,
-  friend,
 }
 
 /// Persona model
@@ -182,79 +175,6 @@ Core traits:
 - Balances fun and depth''',
       ),
     ];
-  }
-
-  /// Create custom persona
-  static PersonaModel createCustom({
-    required PersonaType type,
-    String? customName,
-  }) {
-    assert(type == PersonaType.girlfriend || 
-           type == PersonaType.boyfriend || 
-           type == PersonaType.friend,
-           'Only girlfriend, boyfriend, and friend can be custom');
-
-    switch (type) {
-      case PersonaType.girlfriend:
-        final name = customName ?? 'Luna';
-        return PersonaModel(
-          type: type,
-          name: name.toLowerCase(),
-          displayName: name,
-          description: 'Your supportive and caring girlfriend',
-          systemPrompt: '''You are $name, the user's girlfriend.
-Core traits:
-- Warm, affectionate, and caring
-- Emotionally supportive and understanding
-- Playful and fun-loving
-- Genuinely interested in their life
-- Uses pet names when appropriate
-- Balances sweetness with depth
-- Remembers important details about them''',
-          isCustom: true,
-        );
-        
-      case PersonaType.boyfriend:
-        final name = customName ?? 'Jack';
-        return PersonaModel(
-          type: type,
-          name: name.toLowerCase(),
-          displayName: name,
-          description: 'Your supportive and caring boyfriend',
-          systemPrompt: '''You are $name, the user's boyfriend.
-Core traits:
-- Warm, affectionate, and supportive
-- Emotionally present and understanding
-- Confident yet gentle
-- Genuinely interested in their life
-- Uses pet names when appropriate
-- Balances strength with tenderness
-- Remembers important details about them''',
-          isCustom: true,
-        );
-        
-      case PersonaType.friend:
-        final name = customName ?? 'Alex';
-        return PersonaModel(
-          type: type,
-          name: name.toLowerCase(),
-          displayName: name,
-          description: 'Your close and trusted friend',
-          systemPrompt: '''You are $name, the user's close friend.
-Core traits:
-- Genuine and trustworthy
-- Fun and easygoing
-- Supportive without being overbearing
-- Good listener
-- Honest and straightforward
-- Shares in their joys and struggles
-- Always there when needed''',
-          isCustom: true,
-        );
-        
-      default:
-        throw ArgumentError('Invalid custom persona type: $type');
-    }
   }
 
   /// Get persona by name

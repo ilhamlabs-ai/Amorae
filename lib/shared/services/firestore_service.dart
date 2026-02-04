@@ -7,6 +7,7 @@ import '../models/thread_model.dart';
 import '../models/message_model.dart';
 import '../models/fact_model.dart';
 import '../models/persona_model.dart';
+import '../models/custom_companion_model.dart';
 
 /// Firestore service for all database operations
 class FirestoreService {
@@ -113,6 +114,56 @@ class FirestoreService {
     });
   }
 
+  // ============ COMPANIONS ============
+
+  /// Get companions collection reference
+  CollectionReference<Map<String, dynamic>> _companionsRef(String userId) {
+    return _userRef(userId).collection('companions');
+  }
+
+  /// Create a new custom companion
+  Future<CustomCompanionModel> createCompanion({
+    required String userId,
+    required String name,
+    required String relationship,
+    String? gender,
+    String? bio,
+  }) async {
+    final ref = _companionsRef(userId).doc();
+    final companion = CustomCompanionModel.create(
+      id: ref.id,
+      name: name,
+      relationship: relationship,
+      gender: gender,
+      bio: bio,
+    );
+
+    await ref.set(companion.toFirestore());
+    return companion;
+  }
+
+  /// Get user's companions
+  Future<List<CustomCompanionModel>> getCompanions(String userId) async {
+    final snapshot = await _companionsRef(userId)
+        .orderBy('createdAt', descending: false)
+        .get();
+    return snapshot.docs
+        .map((doc) => CustomCompanionModel.fromFirestore(doc))
+        .toList();
+  }
+
+  /// Stream user's companions
+  Stream<List<CustomCompanionModel>> streamCompanions(String userId) {
+    return _companionsRef(userId)
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => CustomCompanionModel.fromFirestore(doc))
+          .toList();
+    });
+  }
+
   // ============ THREADS ============
 
   /// Get threads collection reference
@@ -126,18 +177,23 @@ class FirestoreService {
     String? title,
     String? persona,
     String? customPersonaName,
+    CustomCompanionModel? customCompanion,
   }) async {
     // Get user to determine persona and generate title
     final user = await getUser(userId);
-    final selectedPersona = persona ?? user?.prefs.selectedPersona ?? 'girlfriend';
+    var selectedPersona = persona ?? user?.prefs.selectedPersona ?? 'amora';
+    if (customCompanion != null && persona == null) {
+      selectedPersona = 'custom';
+    }
     
     // Generate title - prioritize custom name for personalized feel
     String threadTitle;
     if (title != null) {
       threadTitle = title;
-    } else if (customPersonaName != null && customPersonaName.isNotEmpty) {
+    } else if ((customCompanion?.name ?? customPersonaName)?.isNotEmpty == true) {
       // Use custom name if provided
-      threadTitle = 'Chat with $customPersonaName';
+      final displayName = customCompanion?.name ?? customPersonaName!;
+      threadTitle = 'Chat with $displayName';
     } else {
       // Fall back to persona display name
       final personaModel = PersonaModel.getByName(selectedPersona);
@@ -156,7 +212,8 @@ class FirestoreService {
       userId: userId,
       title: threadTitle,
       persona: selectedPersona,
-      customPersonaName: customPersonaName,
+      customPersonaName: customCompanion?.name ?? customPersonaName,
+      customCompanion: customCompanion?.toThreadMap(),
     );
 
     final firestoreData = thread.toFirestore();
@@ -435,6 +492,15 @@ class FirestoreService {
           .get();
       for (final factDoc in factsSnapshot.docs) {
         await factDoc.reference.delete();
+      }
+
+      final companionsSnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('companions')
+          .get();
+      for (final companionDoc in companionsSnapshot.docs) {
+        await companionDoc.reference.delete();
       }
       
       // Delete user document

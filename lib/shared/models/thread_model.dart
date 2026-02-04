@@ -6,7 +6,8 @@ class ThreadModel {
   final String userId;
   final String title;
   final String? persona; // Persona name used in this thread
-  final String? customPersonaName; // Custom name for girlfriend/boyfriend/friend
+  final String? customPersonaName; // Custom display name override
+  final Map<String, dynamic>? customCompanion; // Custom companion profile data
   final int createdAt;
   final int updatedAt;
   final int lastMessageAt;
@@ -22,6 +23,7 @@ class ThreadModel {
     required this.title,
     this.persona,
     this.customPersonaName,
+    this.customCompanion,
     required this.createdAt,
     required this.updatedAt,
     required this.lastMessageAt,
@@ -49,6 +51,9 @@ class ThreadModel {
       title: data['title'] ?? 'New Chat',
       persona: data['persona'],
       customPersonaName: data['customPersonaName'],
+      customCompanion: data['customCompanion'] != null
+          ? Map<String, dynamic>.from(data['customCompanion'])
+          : null,
       createdAt: getTimestamp(data['createdAt']),
       updatedAt: getTimestamp(data['updatedAt']),
       lastMessageAt: getTimestamp(data['lastMessageAt']),
@@ -66,6 +71,7 @@ class ThreadModel {
       'title': title,
       'persona': persona,
       'customPersonaName': customPersonaName,
+      'customCompanion': customCompanion,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'lastMessageAt': lastMessageAt,
@@ -83,6 +89,7 @@ class ThreadModel {
     String? title,
     String? persona,
     String? customPersonaName,
+    Map<String, dynamic>? customCompanion,
     int? createdAt,
     int? updatedAt,
     int? lastMessageAt,
@@ -98,6 +105,7 @@ class ThreadModel {
       title: title ?? this.title,
       persona: persona ?? this.persona,
       customPersonaName: customPersonaName ?? this.customPersonaName,
+      customCompanion: customCompanion ?? this.customCompanion,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
@@ -116,6 +124,7 @@ class ThreadModel {
     String title = 'New Chat',
     String? persona,
     String? customPersonaName,
+    Map<String, dynamic>? customCompanion,
   }) {
     final now = DateTime.now().millisecondsSinceEpoch;
     return ThreadModel(
@@ -124,6 +133,7 @@ class ThreadModel {
       title: title,
       persona: persona,
       customPersonaName: customPersonaName,
+      customCompanion: customCompanion,
       createdAt: now,
       updatedAt: now,
       lastMessageAt: now,
