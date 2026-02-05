@@ -155,23 +155,15 @@ Core traits:
 
     if relationship:
         if relationship == "custom" and custom_relationship:
-            prompt += f"
-- Relationship with the user: {custom_relationship}"
+            prompt += f"\n- Relationship with the user: {custom_relationship}"
         else:
-            prompt += f"
-- Relationship with the user: {_format_relationship(relationship)}"
+            prompt += f"\n- Relationship with the user: {_format_relationship(relationship)}"
     if gender:
-        prompt += f"
-- Gender: {gender}"
+        prompt += f"\n- Gender: {gender}"
     if bio:
-        prompt += f"
+        prompt += f"\n\nCompanion details provided by the user:\n{bio}"
 
-Companion details provided by the user:
-{bio}"
-
-    prompt += "
-
-Stay in character and personalize responses based on the companion details."
+    prompt += "\n\nStay in character and personalize responses based on the companion details."
     return prompt
 
 
