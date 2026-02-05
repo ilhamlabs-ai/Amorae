@@ -264,15 +264,20 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     match /threads/{threadId} {
       allow read, write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+        ((resource.data.userId == request.auth.uid) ||
+         (request.resource.data.userId == request.auth.uid));
     }
     
-    match /messages/{messageId} {
-      allow read, write: if request.auth != null;
+    match /threads/{threadId}/messages/{messageId} {
+      allow read, write: if request.auth != null &&
+        get(/databases/$(database)/documents/threads/$(threadId)).data.userId == request.auth.uid;
     }
     
     match /memories/{memoryId} {

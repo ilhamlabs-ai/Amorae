@@ -6,6 +6,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/providers/providers.dart';
 import '../../../../shared/widgets/widgets.dart';
+import '../../../../core/utils/name_validator.dart';
 
 /// Persona selection drawer
 class PersonaDrawer extends ConsumerStatefulWidget {
@@ -78,6 +79,45 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Text(
+            'CUSTOM COMPANION',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textTertiary,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.add, color: AppColors.accent, size: 20),
+          ),
+          title: Text(
+            'Create Companion',
+            style: AppTextStyles.titleMedium.copyWith(
+              color: AppColors.accent,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Text(
+            'Design your own AI companion',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          onTap: () => _createCompanionAndChat(user),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Divider(color: AppColors.glassBorder, height: 1),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Text(
@@ -165,6 +205,274 @@ class _PersonaDrawerState extends ConsumerState<PersonaDrawer> {
       default:
         return Icons.person;
     }
+  }
+
+  Future<void> _createCompanionAndChat(UserModel user) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+
+    final companion = await _showCreateCompanionDialog(context, userId);
+    if (companion == null) return;
+
+    final firestoreService = ref.read(firestoreServiceProvider);
+    final thread = await firestoreService.createThread(
+      userId: userId,
+      customCompanion: companion,
+    );
+
+    if (mounted) {
+      Navigator.pop(context);
+      context.go('/chat/${thread.id}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Chatting with ${companion.name}'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: AppColors.accent,
+        ),
+      );
+    }
+  }
+
+  Future<CustomCompanionModel?> _showCreateCompanionDialog(
+    BuildContext context,
+    String userId,
+  ) async {
+    final nameController = TextEditingController();
+    final bioController = TextEditingController();
+    final customRelationshipController = TextEditingController();
+    String? gender = 'prefer-not-to-say';
+    String relationship = 'best_friend';
+    String? nameError;
+    String? relationshipError;
+
+    const genderOptions = {
+      'female': 'Female',
+      'male': 'Male',
+      'non-binary': 'Non-binary',
+      'other': 'Other',
+      'prefer-not-to-say': 'Prefer not to say',
+    };
+
+    const relationshipOptions = {
+      'girlfriend': 'Girlfriend',
+      'boyfriend': 'Boyfriend',
+      'best_friend': 'Best Friend',
+      'therapist': 'Therapist',
+      'father': 'Father',
+      'mother': 'Mother',
+      'custom': 'Custom',
+    };
+
+    String relationshipDisplay() {
+      if (relationship == 'custom') {
+        final customValue = customRelationshipController.text.trim();
+        return customValue.isNotEmpty ? customValue : 'Custom';
+      }
+      return relationshipOptions[relationship] ?? relationship;
+    }
+
+    Widget menuField({
+      required String label,
+      required String value,
+      required Map<String, String> options,
+      required ValueChanged<String> onChanged,
+    }) {
+      return PopupMenuButton<String>(
+        position: PopupMenuPosition.under,
+        onSelected: onChanged,
+        itemBuilder: (context) => options.entries
+            .map(
+              (entry) => PopupMenuItem<String>(
+                value: entry.key,
+                child: Text(entry.value),
+              ),
+            )
+            .toList(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.glassBorder),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(value, style: AppTextStyles.bodyLarge),
+                  ],
+                ),
+              ),
+              const Icon(Icons.expand_more, color: AppColors.textSecondary),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return showDialog<CustomCompanionModel>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+            contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            title: Text('Create Companion', style: AppTextStyles.titleMedium),
+            content: SizedBox(
+              width: 360,
+              height: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      autofocus: true,
+                      style: AppTextStyles.bodyLarge,
+                      decoration: InputDecoration(
+                        hintText: 'Companion name',
+                        errorText: nameError,
+                        hintStyle: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.accent, width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    menuField(
+                      label: 'Gender',
+                      value: genderOptions[gender] ?? 'Prefer not to say',
+                      options: genderOptions,
+                      onChanged: (value) => setState(() => gender = value),
+                    ),
+                    const SizedBox(height: 12),
+                    menuField(
+                      label: 'Relationship',
+                      value: relationshipDisplay(),
+                      options: relationshipOptions,
+                      onChanged: (value) => setState(() {
+                        relationship = value;
+                        relationshipError = null;
+                      }),
+                    ),
+                    if (relationship == 'custom') ...[
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: customRelationshipController,
+                        style: AppTextStyles.bodyLarge,
+                        decoration: InputDecoration(
+                          hintText: 'Type relationship',
+                          errorText: relationshipError,
+                          hintStyle: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.background,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppColors.glassBorder),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: bioController,
+                      maxLines: 5,
+                      minLines: 4,
+                      style: AppTextStyles.bodyLarge,
+                      decoration: InputDecoration(
+                        hintText: 'Bio (optional, recommended)',
+                        hintStyle: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.glassBorder),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: AppTextStyles.button.copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final rawName = nameController.text.trim();
+                  final validation = NameValidator.validate(rawName);
+                  if (validation != null) {
+                    setState(() => nameError = validation);
+                    return;
+                  }
+
+                  if (relationship == 'custom') {
+                    final customValue = customRelationshipController.text.trim();
+                    if (customValue.isEmpty) {
+                      setState(() => relationshipError = 'Please enter a relationship');
+                      return;
+                    }
+                  }
+
+                  final firestoreService = ref.read(firestoreServiceProvider);
+                  final customRelationship = relationship == 'custom'
+                      ? customRelationshipController.text.trim()
+                      : null;
+                  final companion = await firestoreService.createCompanion(
+                    userId: userId,
+                    name: NameValidator.sanitize(rawName),
+                    relationship: relationship,
+                    customRelationship: customRelationship,
+                    gender: gender,
+                    bio: bioController.text.trim().isNotEmpty
+                        ? bioController.text.trim()
+                        : null,
+                  );
+
+                  Navigator.pop(context, companion);
+                },
+                child: Text(
+                  'Create',
+                  style: AppTextStyles.button.copyWith(color: AppColors.accent),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _selectPersona(

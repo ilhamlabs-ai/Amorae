@@ -127,6 +127,7 @@ class FirestoreService {
     required String name,
     required String relationship,
     String? gender,
+    String? customRelationship,
     String? bio,
   }) async {
     final ref = _companionsRef(userId).doc();
@@ -135,6 +136,7 @@ class FirestoreService {
       name: name,
       relationship: relationship,
       gender: gender,
+      customRelationship: customRelationship,
       bio: bio,
     );
 

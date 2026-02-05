@@ -121,6 +121,12 @@ Core traits:
 }
 def _format_relationship(relationship: str) -> str:
     mapping = {
+        "girlfriend": "girlfriend",
+        "boyfriend": "boyfriend",
+        "best_friend": "best friend",
+        "therapist": "therapist",
+        "father": "father",
+        "mother": "mother",
         "romantic": "romantic",
         "platonic": "platonic",
         "mentor": "mentor",
@@ -136,6 +142,7 @@ def _build_custom_companion_prompt(companion_profile: dict | None, fallback_name
     name = profile.get("name") or fallback_name or "Companion"
     gender = profile.get("gender")
     relationship = profile.get("relationship")
+    custom_relationship = profile.get("customRelationship")
     bio = profile.get("bio")
 
     prompt = f"""You are {name}, a personalized AI companion created by the user.
@@ -147,7 +154,11 @@ Core traits:
 - Curious and engaged in meaningful conversation"""
 
     if relationship:
-        prompt += f"
+        if relationship == "custom" and custom_relationship:
+            prompt += f"
+- Relationship with the user: {custom_relationship}"
+        else:
+            prompt += f"
 - Relationship with the user: {_format_relationship(relationship)}"
     if gender:
         prompt += f"

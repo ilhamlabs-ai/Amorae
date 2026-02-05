@@ -5,7 +5,8 @@ class CustomCompanionModel {
   final String id;
   final String name;
   final String? gender; // male | female | non-binary | other | prefer-not-to-say
-  final String relationship; // romantic | platonic | mentor | coach | confidant | professional
+  final String relationship; // girlfriend | boyfriend | best_friend | therapist | father | mother | custom | romantic | platonic | mentor | coach | confidant | professional
+  final String? customRelationship; // user-defined relationship label
   final String? bio;
   final int createdAt;
   final int updatedAt;
@@ -15,6 +16,7 @@ class CustomCompanionModel {
     required this.name,
     required this.relationship,
     this.gender,
+    this.customRelationship,
     this.bio,
     required this.createdAt,
     required this.updatedAt,
@@ -35,6 +37,7 @@ class CustomCompanionModel {
       name: data['name'] ?? '',
       gender: data['gender'],
       relationship: data['relationship'] ?? 'platonic',
+      customRelationship: data['customRelationship'],
       bio: data['bio'],
       createdAt: getTimestamp(data['createdAt']),
       updatedAt: getTimestamp(data['updatedAt']),
@@ -46,6 +49,7 @@ class CustomCompanionModel {
       'name': name,
       'gender': gender,
       'relationship': relationship,
+      'customRelationship': customRelationship,
       'bio': bio,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -58,6 +62,7 @@ class CustomCompanionModel {
       'name': name,
       'gender': gender,
       'relationship': relationship,
+      'customRelationship': customRelationship,
       'bio': bio,
     };
   }
@@ -67,6 +72,7 @@ class CustomCompanionModel {
     String? name,
     String? gender,
     String? relationship,
+    String? customRelationship,
     String? bio,
     int? createdAt,
     int? updatedAt,
@@ -76,6 +82,7 @@ class CustomCompanionModel {
       name: name ?? this.name,
       gender: gender ?? this.gender,
       relationship: relationship ?? this.relationship,
+      customRelationship: customRelationship ?? this.customRelationship,
       bio: bio ?? this.bio,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -87,6 +94,7 @@ class CustomCompanionModel {
     required String name,
     required String relationship,
     String? gender,
+    String? customRelationship,
     String? bio,
   }) {
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -95,6 +103,7 @@ class CustomCompanionModel {
       name: name,
       relationship: relationship,
       gender: gender,
+      customRelationship: customRelationship,
       bio: bio,
       createdAt: now,
       updatedAt: now,
