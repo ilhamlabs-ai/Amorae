@@ -91,7 +91,7 @@ class UserPreferences(BaseModel):
         populate_by_name = True
 
 
-class ThreadSummary(BaseModel):(BaseModel):
+class ThreadSummary(BaseModel):
     """Summary of a conversation thread."""
     text: str
     from_seq: int = Field(..., alias="fromSeq")
